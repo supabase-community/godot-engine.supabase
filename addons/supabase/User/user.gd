@@ -25,7 +25,7 @@ func _init(user_dictionary : Dictionary) -> void:
 	created_at = user_dictionary.user.created_at
 	updated_at = user_dictionary.user.updated_at
 	last_sign_in_at = user_dictionary.user.last_sign_in_at 
-	user_metadata = user_dictionary.user.user_metadata
+	user_metadata = user_dictionary.user.user_metadata if user_dictionary.user.user_metadata != null else {}
 	role = user_dictionary.user.role
 
 func _to_string():
