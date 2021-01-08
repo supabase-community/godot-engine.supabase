@@ -1,5 +1,5 @@
 # godot-engine.supabase
-A lightweight addon which integrates Supabase APIs for Godot Engine out of the box. 
+A lightweight addon which integrates Supabase REST APIs for Godot Engine out of the box.  
 
 ### example
 ![code-snapshot](imgs/code-snapshot.png)

@@ -6,8 +6,8 @@ var auth : SupabaseAuth
 var database : SupabaseDatabase
 
 var config : Dictionary = {
-	"supabaseUrl": "",
-	"supabaseKey": ""
+	"supabaseUrl": "https://swoxtqjlueblkgbdskuo.supabase.co",
+	"supabaseKey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlhdCI6MTYwOTY5MjU1NiwiZXhwIjoxOTI1MjY4NTU2fQ.asoFYnjYrbUFjb83nJ-J76CO_KebszxyFUsu8BKcxaQ"
 }
 
 var header : PoolStringArray = [
@@ -22,7 +22,9 @@ func _ready() -> void:
 # Load all config settings from ProjectSettings
 func load_config() -> void:
 	if ProjectSettings.has_setting(ENVIRONMENT_VARIABLES+"supabaseUrl"):
-		for key in config.keys(): config[key] = ProjectSettings.get_setting(ENVIRONMENT_VARIABLES+key)
+		for key in config.keys(): 
+			var setting : String = ProjectSettings.get_setting(ENVIRONMENT_VARIABLES+key)
+			config[key] = setting if setting!=null and setting!="" else config[key]
 	else: printerr("No configuration settings found, add them in override.cfg file.")
 	header.append("apikey: %s"%[config.supabaseKey])
 

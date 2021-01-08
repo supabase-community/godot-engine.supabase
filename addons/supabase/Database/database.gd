@@ -1,20 +1,20 @@
 extends HTTPRequest
 class_name SupabaseDatabase
 
-signal selected(query_result)
 signal error(body)
+signal selected(query_result)
+signal inserted()
+signal updated()
+signal deleted()
 
 const _rest_endpoint : String = "/rest/v1/"
-
-enum REQUEST_CODES {
-	NONE,
-	TABLE
-}
 
 var _config : Dictionary = {}
 var _header : PoolStringArray = []
 var _bearer : PoolStringArray = ["Authorization: Bearer %s"]
-var _request_code : int = REQUEST_CODES.NONE
+var _request_code : int
+
+var _requests_queue : Array = []
 
 func _init(conf : Dictionary, head : PoolStringArray) -> void:
 	_config = conf
@@ -24,20 +24,39 @@ func _init(conf : Dictionary, head : PoolStringArray) -> void:
 	connect("request_completed", self, "_on_request_completed")
 
 # Issue a query on your database
-func query(supabaseQuery : SupabaseQuery) -> void:
-	_request_code = REQUEST_CODES.TABLE
-	var endpoint : String = _config.supabaseUrl + _rest_endpoint + supabaseQuery.query
-	request(endpoint, _header + supabaseQuery.header, true, HTTPClient.METHOD_GET)
-	supabaseQuery.clean()
+func query(supabase_query : SupabaseQuery) -> void:
+	if _request_code != SupabaseQuery.REQUESTS.NONE : 
+		_requests_queue.append(supabase_query)
+		return
+	_request_code = supabase_query.request
+	var endpoint : String = _config.supabaseUrl + _rest_endpoint + supabase_query.query
+	var method : int
+	match supabase_query.request:
+		SupabaseQuery.REQUESTS.INSERT: method = HTTPClient.METHOD_POST
+		SupabaseQuery.REQUESTS.SELECT: method = HTTPClient.METHOD_GET
+		SupabaseQuery.REQUESTS.UPDATE: method = HTTPClient.METHOD_PATCH
+		SupabaseQuery.REQUESTS.DELETE: method = HTTPClient.METHOD_DELETE
+	request(endpoint, _header + supabase_query.header, true, method, supabase_query.body)
+	supabase_query.clean()
 
 # .............. HTTPRequest completed
 func _on_request_completed(result : int, response_code : int, headers : PoolStringArray, body : PoolByteArray) -> void:
-	var result_body = JSON.parse(body.get_string_from_utf8()).result
-	
-	if response_code == 200:
+	var result_body = JSON.parse(body.get_string_from_utf8()).result if body.get_string_from_utf8() else {}
+	if response_code in [200, 201, 204]:
 		match _request_code:
-			REQUEST_CODES.TABLE:
-				emit_signal("selected", result_body)
+			SupabaseQuery.REQUESTS.SELECT: emit_signal("selected", result_body)
+			SupabaseQuery.REQUESTS.INSERT: emit_signal("inserted")
+			SupabaseQuery.REQUESTS.UPDATE: emit_signal("updated")
+			SupabaseQuery.REQUESTS.DELETE: emit_signal("deleted")
 	else:
-		emit_signal("error", result_body)
-	_request_code = REQUEST_CODES.NONE
+		if result_body == null : result_body = {}
+		var supabase_error : SupabaseError = SupabaseError.new(result_body)
+		emit_signal("error", supabase_error)
+	_request_code = SupabaseQuery.REQUESTS.NONE
+	check_queue()
+
+func check_queue() -> void:
+	if _requests_queue.size() > 0 :
+		var request : SupabaseQuery = _requests_queue[0]
+		query(request)
+		_requests_queue.erase(request)
