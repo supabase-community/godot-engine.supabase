@@ -78,9 +78,8 @@ func _on_request_completed(result : int, response_code : int, headers : PoolStri
 
 func check_queue() -> void:
 	if requests_queue.size() > 0 :
-		var request : Array = requests_queue[0]
+		var request : Array = requests_queue.pop_front()
 		match requests_queue[0]:
 			REQUEST_CODES.SIGNUP: sign_up(request[1], request[2])
 			REQUEST_CODES.SIGNIN: sign_in(request[1], request[2])
 			REQUEST_CODES.USER: user(request[1])
-		requests_queue.erase(request)

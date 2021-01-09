@@ -57,6 +57,5 @@ func _on_request_completed(result : int, response_code : int, headers : PoolStri
 
 func check_queue() -> void:
 	if _requests_queue.size() > 0 :
-		var request : SupabaseQuery = _requests_queue[0]
+		var request : SupabaseQuery = _requests_queue.pop_front()
 		query(request)
-		_requests_queue.erase(request)
