@@ -4,6 +4,7 @@ icon.png
 icon.png.import
 project.godot
 scn/
+override.cfg
 
 # Godot-specific ignores
 .import/

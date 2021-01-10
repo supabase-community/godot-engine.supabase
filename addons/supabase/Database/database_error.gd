@@ -19,4 +19,4 @@ func _init(dictionary : Dictionary = {}) -> void:
 ### always different behavior ???
 
 func _to_string():
-	return ""
+	return "%s >> %s: %s (%s)" % [code, message, details, hint]
