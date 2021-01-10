@@ -1,20 +1,17 @@
 extends Reference
-class_name SupabaseError
+class_name SupabaseAuthError
 
 var _error : Dictionary
-var type : String 
-var description : String
+var type : String = "(empty)"
+var description : String = "(empty)"
 
 func _init(dictionary : Dictionary = {}) -> void:
 	_error = dictionary
 	if not _error.empty():
 		if _error.has("error"):
-			type = "[%s]" % _error.error
+			type = _error.error 
 			description = _error.error_description
 		if _error.has("code"):
-			type = "[%s]" % _error.code
-			description = _error.message
-	else:
-		type = "(empty)"
-		description = "(empty)"
-
+			type = str(_error.code)
+			description = _error.msg
+	# different body for same api source ???

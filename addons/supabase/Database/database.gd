@@ -1,11 +1,11 @@
 extends HTTPRequest
 class_name SupabaseDatabase
 
-signal error(body)
 signal selected(query_result)
 signal inserted()
 signal updated()
 signal deleted()
+signal error(body)
 
 const _rest_endpoint : String = "/rest/v1/"
 
@@ -19,8 +19,6 @@ var _requests_queue : Array = []
 func _init(conf : Dictionary, head : PoolStringArray) -> void:
 	_config = conf
 	_header = head
-	_bearer[0] = _bearer[0] % _config.supabaseKey
-	_header += _bearer
 	connect("request_completed", self, "_on_request_completed")
 
 # Issue a query on your database
@@ -28,6 +26,7 @@ func query(supabase_query : SupabaseQuery) -> void:
 	if _request_code != SupabaseQuery.REQUESTS.NONE : 
 		_requests_queue.append(supabase_query)
 		return
+	_bearer = Supabase.auth._bearer
 	_request_code = supabase_query.request
 	var endpoint : String = _config.supabaseUrl + _rest_endpoint + supabase_query.query
 	var method : int
@@ -36,7 +35,7 @@ func query(supabase_query : SupabaseQuery) -> void:
 		SupabaseQuery.REQUESTS.SELECT: method = HTTPClient.METHOD_GET
 		SupabaseQuery.REQUESTS.UPDATE: method = HTTPClient.METHOD_PATCH
 		SupabaseQuery.REQUESTS.DELETE: method = HTTPClient.METHOD_DELETE
-	request(endpoint, _header + supabase_query.header, true, method, supabase_query.body)
+	request(endpoint, _header + _bearer + supabase_query.header, true, method, supabase_query.body)
 	supabase_query.clean()
 
 # .............. HTTPRequest completed
@@ -50,13 +49,12 @@ func _on_request_completed(result : int, response_code : int, headers : PoolStri
 			SupabaseQuery.REQUESTS.DELETE: emit_signal("deleted")
 	else:
 		if result_body == null : result_body = {}
-		var supabase_error : SupabaseError = SupabaseError.new(result_body)
+		var supabase_error : SupabaseDatabaseError = SupabaseDatabaseError.new(result_body)
 		emit_signal("error", supabase_error)
 	_request_code = SupabaseQuery.REQUESTS.NONE
 	check_queue()
 
 func check_queue() -> void:
 	if _requests_queue.size() > 0 :
-		var request : SupabaseQuery = _requests_queue[0]
+		var request : SupabaseQuery = _requests_queue.pop_front()
 		query(request)
-		_requests_queue.erase(request)

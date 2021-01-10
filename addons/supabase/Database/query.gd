@@ -24,7 +24,7 @@ func from(table_name : String) -> SupabaseQuery:
 
 
 # Insert new Row
-func insert(fields : Dictionary, upsert : bool = false) -> SupabaseQuery:
+func insert(fields : Array, upsert : bool = false) -> SupabaseQuery:
 	request = REQUESTS.INSERT
 	body = JSON.print(fields)
 	if upsert : header += PoolStringArray(["Prefer: resolution=merge-duplicates"])
