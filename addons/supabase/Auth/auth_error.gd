@@ -15,3 +15,6 @@ func _init(dictionary : Dictionary = {}) -> void:
 			type = str(_error.code)
 			description = _error.msg
 	# different body for same api source ???
+
+func _to_string():
+	return "%s >> %s" % [type, description]
