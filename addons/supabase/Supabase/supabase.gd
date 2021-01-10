@@ -6,8 +6,8 @@ var auth : SupabaseAuth
 var database : SupabaseDatabase
 
 var config : Dictionary = {
-	"supabaseUrl": "https://swoxtqjlueblkgbdskuo.supabase.co",
-	"supabaseKey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlhdCI6MTYwOTY5MjU1NiwiZXhwIjoxOTI1MjY4NTU2fQ.asoFYnjYrbUFjb83nJ-J76CO_KebszxyFUsu8BKcxaQ"
+	"supabaseUrl": "",
+	"supabaseKey": ""
 }
 
 var header : PoolStringArray = [
