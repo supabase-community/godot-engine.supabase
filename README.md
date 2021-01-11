@@ -1,4 +1,4 @@
-<p align="center"><img src="addons/supabase/icon.svg"/></p>
+<p align="center"><img src="addons/supabase/icon.svg" width="80px"/></p>
 
 # Godot Engine - Supabase
 A lightweight addon which integrates Supabase REST APIs for Godot Engine out of the box.  
