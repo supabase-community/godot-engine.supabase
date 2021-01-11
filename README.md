@@ -1,4 +1,6 @@
-# godot-engine.supabase
+<p align="center"><img src="addons/supabase/icon.svg"/></p>
+
+# Godot Engine - Supabase
 A lightweight addon which integrates Supabase REST APIs for Godot Engine out of the box.  
 
 ### example

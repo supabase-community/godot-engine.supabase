@@ -40,6 +40,7 @@ func query(supabase_query : SupabaseQuery) -> void:
 
 # .............. HTTPRequest completed
 func _on_request_completed(result : int, response_code : int, headers : PoolStringArray, body : PoolByteArray) -> void:
+	print(body.get_string_from_utf8())
 	var result_body = JSON.parse(body.get_string_from_utf8()).result if body.get_string_from_utf8() else {}
 	if response_code in [200, 201, 204]:
 		match _request_code:
