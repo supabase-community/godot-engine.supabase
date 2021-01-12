@@ -9,7 +9,7 @@ A collection of examples and live demos is available at [*fenix-hub/godot-engine
 ### code snippet
 ![code-snapshot](imgs/code-snapshot.png)
 
-```
+```gdscript
 func _ready() -> void:
 	# Connect required signals
 	Supabase.auth.connect("signed_in",self,"_on_signed_in")
