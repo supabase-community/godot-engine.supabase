@@ -3,7 +3,10 @@
 # Godot Engine - Supabase
 A lightweight addon which integrates Supabase REST APIs for Godot Engine out of the box.  
 
-### example
+### examples and demos
+A collection of examples and live demos is available at [*fenix-hub/godot-engine.supabase-examples*](https://github.com/fenix-hub/godot-engine.supabase-examples), both with source code and exported binaries.  
+
+### code snippet
 ![code-snapshot](imgs/code-snapshot.png)
 
 ```gdscript
