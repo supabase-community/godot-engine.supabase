@@ -6,7 +6,7 @@ A lightweight addon which integrates Supabase REST APIs for Godot Engine out of 
 ### example
 ![code-snapshot](imgs/code-snapshot.png)
 
-```
+```gdscript
 func _ready() -> void:
 	# Connect required signals
 	Supabase.auth.connect("signed_in",self,"_on_signed_in")
