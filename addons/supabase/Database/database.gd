@@ -2,15 +2,15 @@ extends HTTPRequest
 class_name SupabaseDatabase
 
 signal selected(query_result)
-signal inserted()
-signal updated()
-signal deleted()
+signal inserted(query_result)
+signal updated(query_result)
+signal deleted(query_result)
 signal error(body)
 
 const _rest_endpoint : String = "/rest/v1/"
 
 var _config : Dictionary = {}
-var _header : PoolStringArray = []
+var _header : PoolStringArray = ["Prefer: return=representation"]
 var _bearer : PoolStringArray = ["Authorization: Bearer %s"]
 var _request_code : int
 
@@ -18,7 +18,7 @@ var _requests_queue : Array = []
 
 func _init(conf : Dictionary, head : PoolStringArray) -> void:
 	_config = conf
-	_header = head
+	_header += head
 	connect("request_completed", self, "_on_request_completed")
 
 # Issue a query on your database
@@ -40,14 +40,13 @@ func query(supabase_query : SupabaseQuery) -> void:
 
 # .............. HTTPRequest completed
 func _on_request_completed(result : int, response_code : int, headers : PoolStringArray, body : PoolByteArray) -> void:
-	print(body.get_string_from_utf8())
 	var result_body = JSON.parse(body.get_string_from_utf8()).result if body.get_string_from_utf8() else {}
 	if response_code in [200, 201, 204]:
 		match _request_code:
 			SupabaseQuery.REQUESTS.SELECT: emit_signal("selected", result_body)
-			SupabaseQuery.REQUESTS.INSERT: emit_signal("inserted")
-			SupabaseQuery.REQUESTS.UPDATE: emit_signal("updated")
-			SupabaseQuery.REQUESTS.DELETE: emit_signal("deleted")
+			SupabaseQuery.REQUESTS.INSERT: emit_signal("inserted", result_body)
+			SupabaseQuery.REQUESTS.UPDATE: emit_signal("updated", result_body)
+			SupabaseQuery.REQUESTS.DELETE: emit_signal("deleted", result_body)
 	else:
 		if result_body == null : result_body = {}
 		var supabase_error : SupabaseDatabaseError = SupabaseDatabaseError.new(result_body)

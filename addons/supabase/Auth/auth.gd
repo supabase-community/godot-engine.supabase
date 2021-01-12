@@ -61,8 +61,6 @@ func log_out() -> void:
 		requests_queue.append([REQUEST_CODES.LOGOUT])
 		return
 	_request_code = REQUEST_CODES.LOGOUT
-	print(_config.supabaseUrl + _logout_endpoint)
-	print(_header + _bearer)
 	request(_config.supabaseUrl + _logout_endpoint, _header + _bearer, true, HTTPClient.METHOD_POST)
 
 
