@@ -52,7 +52,7 @@ func range(from : int, to : int) -> SupabaseQuery:
     return self
 
 func eq(column : String, value : String) -> SupabaseQuery:
-    query += (column+"=eq."+value)
+    query += ("&" if not query.ends_with("&") else "") + (column+"=eq."+value)
     return self
 
 func gt(column : String, value : String) -> SupabaseQuery:
