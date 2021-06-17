@@ -1,5 +1,5 @@
-extends HTTPRequest
 class_name SupabaseDatabase
+extends Node
 
 signal selected(query_result)
 signal inserted(query_result)
@@ -12,51 +12,41 @@ const _rest_endpoint : String = "/rest/v1/"
 var _config : Dictionary = {}
 var _header : PoolStringArray = ["Prefer: return=representation"]
 var _bearer : PoolStringArray = ["Authorization: Bearer %s"]
-var _request_code : int
-
-var _requests_queue : Array = []
 
 func _init(conf : Dictionary, head : PoolStringArray) -> void:
     _config = conf
     _header += head
-    connect("request_completed", self, "_on_request_completed")
+
 
 # Issue a query on your database
-func query(supabase_query : SupabaseQuery) -> void:
-    if _request_code != SupabaseQuery.REQUESTS.NONE : 
-        _requests_queue.append(supabase_query)
-        return
+func query(supabase_query : SupabaseQuery) -> DatabaseTask:
     _bearer = Supabase.auth._bearer
-    if "%s" in _bearer[0]:
-        _bearer[0] = _bearer[0] % _config.supabaseKey
-    _request_code = supabase_query.request
-    var endpoint : String = _config.supabaseUrl + _rest_endpoint + supabase_query.query
-    var method : int
-    match supabase_query.request:
-        SupabaseQuery.REQUESTS.INSERT: method = HTTPClient.METHOD_POST
-        SupabaseQuery.REQUESTS.SELECT: method = HTTPClient.METHOD_GET
-        SupabaseQuery.REQUESTS.UPDATE: method = HTTPClient.METHOD_PATCH
-        SupabaseQuery.REQUESTS.DELETE: method = HTTPClient.METHOD_DELETE
-    request(endpoint, _header + _bearer + supabase_query.header, true, method, supabase_query.body)
-    supabase_query.clean()
+    var endpoint : String = _config.supabaseUrl + _rest_endpoint + supabase_query.build_query()
+    var task : DatabaseTask = DatabaseTask.new(
+        supabase_query,
+        supabase_query.request, 
+        endpoint, 
+        _header + _bearer + supabase_query.header, 
+        supabase_query.body)
+    _process_task(task)
+    return task
+
+
+func _process_task(task : DatabaseTask) -> void:
+    var httprequest : HTTPRequest = HTTPRequest.new()
+    add_child(httprequest)
+    task.connect("completed", self, "_on_task_completed")
+    task.push_request(httprequest)
+    add_child(task)
+
 
 # .............. HTTPRequest completed
-func _on_request_completed(result : int, response_code : int, headers : PoolStringArray, body : PoolByteArray) -> void:
-    var result_body = JSON.parse(body.get_string_from_utf8()).result if body.get_string_from_utf8() else {}
-    if response_code in [200, 201, 204]:
-        match _request_code:
-            SupabaseQuery.REQUESTS.SELECT: emit_signal("selected", result_body)
-            SupabaseQuery.REQUESTS.INSERT: emit_signal("inserted", result_body)
-            SupabaseQuery.REQUESTS.UPDATE: emit_signal("updated", result_body)
-            SupabaseQuery.REQUESTS.DELETE: emit_signal("deleted", result_body)
-    else:
-        if result_body == null : result_body = {}
-        var supabase_error : SupabaseDatabaseError = SupabaseDatabaseError.new(result_body)
-        emit_signal("error", supabase_error)
-    _request_code = SupabaseQuery.REQUESTS.NONE
-    check_queue()
-
-func check_queue() -> void:
-    if _requests_queue.size() > 0 :
-        var request : SupabaseQuery = _requests_queue.pop_front()
-        query(request)
+func _on_task_completed(task : DatabaseTask) -> void:
+    if task.data != []:    
+        match task._code:
+            SupabaseQuery.REQUESTS.SELECT: emit_signal("selected", task.data)
+            SupabaseQuery.REQUESTS.INSERT: emit_signal("inserted", task.data)
+            SupabaseQuery.REQUESTS.UPDATE: emit_signal("updated", task.data)
+            SupabaseQuery.REQUESTS.DELETE: emit_signal("deleted", task.data)
+    elif task.error != null:
+        emit_signal("error", task.error)

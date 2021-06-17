@@ -1,10 +1,23 @@
 extends Reference
 class_name SupabaseQuery
 
+var query_struct : Dictionary = {
+    table = "",
+    select = PoolStringArray([]),
+    order = PoolStringArray([]),
+    eq = PoolStringArray([]),
+    neq = PoolStringArray([]),
+    like = PoolStringArray([]),
+    ilike = PoolStringArray([]),
+    IS = PoolStringArray([]),
+    in = PoolStringArray([])
+   }
+
 var query : String = ""
 var header : PoolStringArray = []
-var body : String = ""
 var request : int
+var body : String = ""
+
 
 enum REQUESTS {
     NONE,
@@ -14,14 +27,49 @@ enum REQUESTS {
     DELETE
 }
 
+enum Directions {
+    Ascending,
+    Descending
+   }
+
+enum Nullsorder {
+    First,
+    Last
+   }
+
+enum Filters {
+    EQUAL,
+    NOT_EQUAL,
+    GREATER_THAN
+    LESS_THAN,
+    GREATER_THAN_OR_EQUAL,
+    LESS_THAN_OR_EQUAL,
+    LIKE,
+    ILIKE,
+    IS,
+    IN
+   }
 
 func _init():
     pass
 
-func from(table_name : String) -> SupabaseQuery:
-    query += table_name+"?"
-    return self
+# Build the query from the scrut
+func build_query() -> String:
+    for key in query_struct:
+        match key:
+            "table":
+                query += query_struct[key]
+            "select", "order":
+                if query_struct[key].empty(): continue
+                query += (key + "=" + PoolStringArray(query_struct[key]).join(",")+"&")
+            "eq", "neq", "lt", "gt", "lte", "gte", "like", "ilike", "IS", "in":
+                query += PoolStringArray(query_struct[key]).join("&")
+    return query
 
+
+func from(table_name : String) -> SupabaseQuery:
+    query_struct.table = table_name+"?"
+    return self
 
 # Insert new Row
 func insert(fields : Array, upsert : bool = false) -> SupabaseQuery:
@@ -31,9 +79,9 @@ func insert(fields : Array, upsert : bool = false) -> SupabaseQuery:
     return self
 
 # Select Rows
-func select(columns : PoolStringArray) -> SupabaseQuery:
+func select(columns : PoolStringArray = PoolStringArray(["*"])) -> SupabaseQuery:
     request = REQUESTS.SELECT
-    query += columns.join(",")+"&"
+    query_struct.select += columns
     return self
 
 # Update Rows
@@ -47,48 +95,103 @@ func delete() -> SupabaseQuery:
     request = REQUESTS.DELETE
     return self
 
+## [MODIFIERS] -----------------------------------------------------------------
+
 func range(from : int, to : int) -> SupabaseQuery:
     header = PoolStringArray(["Range: "+str(from)+"-"+str(to)])
     return self
 
+func order(column : String, direction : int = Directions.Ascending, nullsorder : int = Nullsorder.First) -> SupabaseQuery:
+    var direction_str : String
+    match direction:
+        Directions.Ascending: direction_str = "asc"
+        Directions.Descending: direction_str = "desc"
+    var nullsorder_str : String
+    match nullsorder:
+        Nullsorder.First: nullsorder_str = "nullsfirst"
+        Nullsorder.Last: nullsorder_str = "nullslast"
+    query_struct.order.append("%s.%s.%s" % [column, direction_str, nullsorder_str])
+    return self
+
+## [FILTERS] -------------------------------------------------------------------- 
+
+func filter(column : String, filter : int, value : String) -> SupabaseQuery:
+    var filter_str : String
+    match filter:
+        Filters.EQUAL: filter_str = "eq"
+        Filters.NOT_EQUAL: filter_str = "neq"
+        Filters.GREATER_THAN: filter_str = "gt"
+        Filters.LESS_THAN: filter_str = "lt"
+        Filters.GREATER_THAN_OR_EQUAL: filter_str = "gte"
+        Filters.LESS_THAN_OR_EQUAL: filter_str = "lte"
+        Filters.LIKE: filter_str = "like"
+        Filters.ILIKE: filter_str = "ilike"
+        Filters.IS: filter_str = "is"
+        Filters.IN: filter_str = "in"
+    var array : PoolStringArray = query_struct[filter_str] as PoolStringArray
+    array.append("%s=%s.%s" % [column, filter_str, value])
+    query_struct[filter_str] = array
+    return self
+        
+
+# Finds all rows whose value on the stated columns match the specified values.
+func match(query_dict : Dictionary) -> SupabaseQuery:
+    for key in query_dict.keys():
+        eq(key, query_dict[key])
+    return self
+
+# Finds all rows whose value on the stated column match the specified value.
 func eq(column : String, value : String) -> SupabaseQuery:
-    query += ("&" if not query.ends_with("&") else "") + (column+"=eq."+value)
+    filter(column, Filters.EQUAL, value)
     return self
 
-func gt(column : String, value : String) -> SupabaseQuery:
-    query += (column+"=gt."+value)
-    return self
-
-func lt(column : String, value : String) -> SupabaseQuery:
-    query += (column+"=lt."+value)
-    return self
-
-func gte(column : String, value : String) -> SupabaseQuery:
-    query += (column+"=gte."+value)
-    return self
-
-func lte(column : String, value : String) -> SupabaseQuery:
-    query += (column+"=lte."+value)
-    return self
-
-func like(column : String, value : String) -> SupabaseQuery:
-    query += (column+"=like."+value)
-    return self
-
-func ilike(column : String, value : String) -> SupabaseQuery:
-    query += (column+"=ilike."+value)
-    return self
-
-func is_(column : String, value) -> SupabaseQuery:
-    query += (column+"=is."+str(value))
-    return self
-
-func in(column : String, array : PoolStringArray) -> SupabaseQuery:
-    query += (column+"=in.("+array.join(",")+")")
-    return self
-
+# Finds all rows whose value on the stated column doesn't match the specified value.
 func neq(column : String, value : String) -> SupabaseQuery:
-    query += (column+"=neq."+value)
+    filter(column, Filters.NOT_EQUAL, value)
+    return self
+
+# Finds all rows whose value on the stated column is greater than the specified value
+func gt(column : String, value : String) -> SupabaseQuery:
+    filter(column, Filters.GREATER_THAN, value)
+    return self
+
+# Finds all rows whose value on the stated column is less than the specified value
+func lt(column : String, value : String) -> SupabaseQuery:
+    filter(column, Filters.LESS_THAN, value)
+    return self
+
+# Finds all rows whose value on the stated column is greater than or equal to the specified value
+func gte(column : String, value : String) -> SupabaseQuery:
+    filter(column, Filters.GREATER_THAN_OR_EQUAL, value)
+    return self
+
+# Finds all rows whose value on the stated column is less than or equal to the specified value
+func lte(column : String, value : String) -> SupabaseQuery:
+    filter(column, Filters.LESS_THAN_OR_EQUAL, value)
+    return self
+
+# Finds all rows whose value in the stated column matches the supplied pattern (case sensitive).
+func like(column : String, value : String) -> SupabaseQuery:
+    filter(column, Filters.LIKE, value)
+    return self
+
+# Finds all rows whose value in the stated column matches the supplied pattern (case insensitive).
+func ilike(column : String, value : String) -> SupabaseQuery:
+    filter(column, Filters.ILIKE, value)
+    return self
+
+# A check for exact equality (null, true, false), finds all rows whose value on the stated column exactly match the specified value.
+func Is(column : String, value) -> SupabaseQuery:
+    filter(column, Filters.IS, str(value))
+    return self
+
+# Finds all rows whose value on the stated column is found on the specified values.
+func In(column : String, array : PoolStringArray) -> SupabaseQuery:
+    filter(column, Filters.IN, "("+array.join(",")+")")
+    return self
+
+func Or(column : String, value : String) -> SupabaseQuery:
+    filter(column, Filters.OR, value)
     return self
 
 func clean() -> void:
@@ -96,3 +199,21 @@ func clean() -> void:
     body = ""
     header = []
     request = 0
+    
+    query_struct.table = ""
+    query_struct.select = PoolStringArray([])
+    query_struct.order = PoolStringArray([])
+    query_struct.eq = PoolStringArray([])
+    query_struct.neq = PoolStringArray([])
+    query_struct.gt = PoolStringArray([])
+    query_struct.lt = PoolStringArray([])
+    query_struct.gte = PoolStringArray([])
+    query_struct.lte = PoolStringArray([])
+    query_struct.like = PoolStringArray([])
+    query_struct.ilike = PoolStringArray([])
+    query_struct.IS = PoolStringArray([])
+    query_struct.in = PoolStringArray([])
+
+
+func _to_string() -> String:
+    return "QUERY: " + query
