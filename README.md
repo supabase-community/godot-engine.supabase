@@ -11,7 +11,7 @@ A wiki is available [*here*](https://github.com/fenix-hub/godot-engine.supabase/
 Even though it is still not complete, Classes and APIs references are always listed and updated.  
 
 ### code snippet
-![code-snapshot](imgs/code-snapshot.png.old)
+![code-snapshot](imgs/code-snapshot.png)
 
 Multiple approaches!
 
