@@ -11,7 +11,9 @@ A wiki is available [*here*](https://github.com/fenix-hub/godot-engine.supabase/
 Even though it is still not complete, Classes and APIs references are always listed and updated.  
 
 ### code snippet
-![code-snapshot](imgs/code-snapshot.png)
+![code-snapshot](imgs/code-snapshot.png.old)
+
+Multiple approaches!
 
 ```gdscript
 func _ready() -> void:
@@ -26,7 +28,7 @@ func _ready() -> void:
 
 	# write a query
 	var query : SupabaseQuery = SupabaseQuery.new()
-	query.from('test-table').select(['*']).eq("id","1")
+	query.from('test-table').select().eq("id","1")
 	
 func _on_signed_in(user : SupabaseUser) -> void:
 	print(user)
@@ -37,4 +39,17 @@ func _on_selected(query_result : Array) -> void:
 
 func _on_error(error : Dictionary) -> void: 
 	print(error)
+```
+  
+```gdscript
+func _ready() -> void:
+	# email/password sign in
+	var authtask : AuthTask = yield(Supabase.auth.sign_in("user@usermail.mail","userpasswrd"), "completed")
+	if authtask.user != null:
+		# write a query
+		var dbtask : DatabaseTask = yield(SupabaseQuery.new().from('test-table').select().eq("id","1"), "completed")
+		if dbtask.error == null:
+			print(dbtask.data)
+		else:
+			print(dbtas.error)
 ```
