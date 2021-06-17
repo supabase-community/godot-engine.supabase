@@ -47,7 +47,7 @@ func _ready() -> void:
 	var authtask : AuthTask = yield(Supabase.auth.sign_in("user@usermail.mail","userpasswrd"), "completed")
 	if authtask.user != null:
 		# write a query
-		var dbtask : DatabaseTask = yield(SupabaseQuery.new().from('test-table').select().eq("id","1"), "completed")
+		var dbtask : DatabaseTask = yield(Supabase.database.query(SupabaseQuery.new().from('test-table').select().eq("id","1")), "completed")
 		if dbtask.error == null:
 			print(dbtask.data)
 		else:
