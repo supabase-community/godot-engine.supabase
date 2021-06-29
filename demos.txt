@@ -1,9 +1,0 @@
-- Single module examples ( database, authentication )
-- chat app
-- to do list/kanban app
-- Chess game
-- Scoreboard
-- turn based pvp casual game (other than chess)
-- restaurant app to book seats, check the menu, order food
-- plant control app
-- ui components
