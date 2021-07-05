@@ -1,7 +1,7 @@
 class_name AuthTask
 extends Reference
 
-signal completed(auth_response)
+signal completed(task)
 
 enum Task {
     NONE,
