@@ -4,6 +4,7 @@ const ENVIRONMENT_VARIABLES : String = "supabase/config/"
 
 var auth : SupabaseAuth 
 var database : SupabaseDatabase
+var realtime : SupabaseRealtime
 
 var config : Dictionary = {
     "supabaseUrl": "",
@@ -31,5 +32,7 @@ func load_config() -> void:
 func load_nodes() -> void:
     auth = SupabaseAuth.new(config, header)
     database = SupabaseDatabase.new(config, header)
+    realtime = SupabaseRealtime.new(config)
     add_child(auth)
     add_child(database)
+    add_child(realtime)
