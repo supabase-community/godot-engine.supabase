@@ -64,8 +64,10 @@ func _build_topic(schema : String, table : String = "", col_value : String = "")
         
 func channel(schema : String, table : String = "", col_value : String = "") -> RealtimeChannel:
     var topic : String = _build_topic(schema, table, col_value)
-    var channel : RealtimeChannel = RealtimeChannel.new(topic, self)
-    add_channel(channel)
+    var channel : RealtimeChannel = get_channel(topic)
+    if channel == null:
+        channel = RealtimeChannel.new(topic, self)
+        add_channel(channel)
     return channel
 
 func add_channel(channel : RealtimeChannel) -> void:
@@ -98,10 +100,15 @@ func _on_data() -> void:
             emit_signal("error", data.payload)
         SupabaseEvents.DELETE, SupabaseEvents.INSERT, SupabaseEvents.UPDATE:
             print("Received %s event..." % data.event)
-            for channel in channels:
-                if channel.topic == data.topic:
-                    channel.publish(data)
-                    return
+            var channel : RealtimeChannel = get_channel(data.topic)
+            if channel != null:
+                channel.publish(data)
+
+func get_channel(topic : String) -> RealtimeChannel:
+    for channel in channels:
+        if channel.topic == topic:
+            return channel
+    return null
 
 func _check_response(message : Dictionary):
         if message.event == PhxEvents.REPLY:

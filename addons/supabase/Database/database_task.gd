@@ -1,7 +1,7 @@
 class_name DatabaseTask
 extends HTTPRequest
 
-signal completed(auth_response)
+signal completed(task)
 
 var _code : int
 var _method : int
