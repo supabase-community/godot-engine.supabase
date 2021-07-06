@@ -56,7 +56,8 @@ func disconnect_client() -> void:
     _ws_client.disconnect("connection_error", self, "_closed")
     _ws_client.disconnect("connection_established", self, "_connected")
     _ws_client.disconnect("data_received", self, "_on_data")
-    _heartbeat_timer.connect("timeout", self, "_on_timeout")
+    _heartbeat_timer.disconnect("timeout", self, "_on_timeout")
+    _ws_client.disconnect_from_host(1000, "Disconnection requested from client.")
 
 func _build_topic(schema : String, table : String = "", col_value : String = "") -> String:
     var topic : String = "realtime:"+schema
