@@ -33,26 +33,34 @@ func _init(url : String, apikey : String, timeout : float) -> void:
     _heartbeat_timer.set_wait_time(timeout)
     
 func _ready() -> void:
-    _connect_signals()
     add_child(_heartbeat_timer)
 
 func _connect_signals() -> void:
     _ws_client.connect("connection_closed", self, "_closed")
-    _ws_client.connect("connection_error", self, "_closed")
+    _ws_client.connect("connection_error", self, "_error")
     _ws_client.connect("connection_established", self, "_connected")
     _ws_client.connect("data_received", self, "_on_data")
     _heartbeat_timer.connect("timeout", self, "_on_timeout")
 
+func _disconnect_signals() -> void:
+    _ws_client.disconnect("connection_closed", self, "_closed")
+    _ws_client.disconnect("connection_error", self, "_closed")
+    _ws_client.disconnect("connection_established", self, "_connected")
+    _ws_client.disconnect("data_received", self, "_on_data")
+    _heartbeat_timer.disconnect("timeout", self, "_on_timeout")
+
 func connect_client() -> int:
+    _connect_signals()
     var err = _ws_client.connect_to_url("{url}?apikey={apikey}".format({url = _db_url, apikey = _apikey}))
     if err != OK:
+        _disconnect_signals()
         _heartbeat_timer.stop()
     else:
         _heartbeat_timer.start()
     return err
 
 func disconnect_client() -> void:
-    pass
+    _ws_client.disconnect_from_host(1000, "Disconnection requested from client.")
 
 func _build_topic(schema : String, table : String = "", col_value : String = "") -> String:
     var topic : String = "realtime:"+schema
@@ -76,6 +84,9 @@ func add_channel(channel : RealtimeChannel) -> void:
 func _closed(was_clean = false):
     emit_signal("disconnected")
     set_process(false)
+
+func _error() : 
+    emit_signal("error", "")
 
 func _connected(proto = ""):
     emit_signal("connected")
