@@ -3,8 +3,8 @@
 # Godot Engine - Supabase
 A lightweight addon which integrates Supabase APIs for Godot Engine out of the box.  
 
-- [x] GoTrue (/auth)
-- [x] PostgREST (/rest)
+- [x] Authentication (/auth)
+- [x] Database (/database)
 - [x] Realtime (/realtime)
 - [ ] Storage (/storage)
 

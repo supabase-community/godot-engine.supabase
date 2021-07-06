@@ -62,6 +62,14 @@ func connect_client() -> int:
 func disconnect_client() -> void:
     _ws_client.disconnect_from_host(1000, "Disconnection requested from client.")
 
+func channel(schema : String, table : String = "", col_value : String = "") -> RealtimeChannel:
+    var topic : String = _build_topic(schema, table, col_value)
+    var channel : RealtimeChannel = get_channel(topic)
+    if channel == null:
+        channel = RealtimeChannel.new(topic, self)
+        _add_channel(channel)
+    return channel
+
 func _build_topic(schema : String, table : String = "", col_value : String = "") -> String:
     var topic : String = "realtime:"+schema
     if table != "":
@@ -70,31 +78,23 @@ func _build_topic(schema : String, table : String = "", col_value : String = "")
             topic+=":"+col_value
     return topic
         
-func channel(schema : String, table : String = "", col_value : String = "") -> RealtimeChannel:
-    var topic : String = _build_topic(schema, table, col_value)
-    var channel : RealtimeChannel = get_channel(topic)
-    if channel == null:
-        channel = RealtimeChannel.new(topic, self)
-        add_channel(channel)
-    return channel
-
-func add_channel(channel : RealtimeChannel) -> void:
+func _add_channel(channel : RealtimeChannel) -> void:
     channels.append(channel)
-
-func _closed(was_clean = false):
-    emit_signal("disconnected")
-    set_process(false)
-
-func _error() : 
-    emit_signal("error", "")
 
 func _connected(proto = ""):
     emit_signal("connected")
     set_process(true)
 
+func _closed(was_clean : bool = false):
+    emit_signal("disconnected")
+    _disconnect_signals()
+    set_process(false)
+
+func _error(msg : String = "") : 
+    emit_signal("error", msg)
+
 func _on_data() -> void:
     var data : Dictionary = get_message(_ws_client.get_peer(1).get_packet())
-    #print("Got data from server: ", to_json(data))
     match data.event:
         PhxEvents.REPLY:
             if _check_response(data) == 0:
@@ -122,9 +122,8 @@ func get_channel(topic : String) -> RealtimeChannel:
     return null
 
 func _check_response(message : Dictionary):
-        if message.event == PhxEvents.REPLY:
-            if message.payload.status == "ok":
-                return 0
+    if message.payload.status == "ok":
+        return 0
 
 func get_message(pb : PoolByteArray) -> Dictionary:
     return parse_json(pb.get_string_from_utf8())
