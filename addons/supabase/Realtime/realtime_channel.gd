@@ -28,7 +28,7 @@ func publish(message : Dictionary):
             
 func subscribe():
     if subscribed: 
-        _client.emit_signal("error", "Already subscribed to topic: %s" % topic)
+        _client._error("Already subscribed to topic: %s" % topic)
         return
     _client.send_message({
       "topic": topic,
@@ -41,7 +41,7 @@ func subscribe():
             
 func unsubscribe():
     if not subscribed: 
-        _client.emit_signal("error", "Already unsubscribed from topic: %s" % topic)
+        _client._error("Already unsubscribed from topic: %s" % topic)
         return
     _client.send_message({
       "topic": topic,

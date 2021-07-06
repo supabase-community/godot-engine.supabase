@@ -5,6 +5,7 @@ var _config : Dictionary
 
 func _init(config : Dictionary) -> void:
     _config = config
+    name = "Realtime"
     
 func _ready():
     pass # Replace with function body.

@@ -1,5 +1,5 @@
 class_name DatabaseTask
-extends HTTPRequest
+extends Reference
 
 signal completed(task)
 
@@ -11,7 +11,7 @@ var _payload : String
 var _query : SupabaseQuery
 
 # EXPOSED VARIABLES ---------------------------------------------------------
-var data : Array
+var data 
 var error : SupabaseDatabaseError
 # ---------------------------------------------------------------------------
 
@@ -24,13 +24,15 @@ func _init(query : SupabaseQuery, code : int, endpoint : String, headers : PoolS
     _headers = headers
     _payload = payload
     _method = match_code(code)
+    
 
 func match_code(code : int) -> int:
     match code:
         SupabaseQuery.REQUESTS.INSERT: return HTTPClient.METHOD_POST
-        SupabaseQuery.REQUESTS.SELECT, _: return HTTPClient.METHOD_GET
+        SupabaseQuery.REQUESTS.SELECT: return HTTPClient.METHOD_GET
         SupabaseQuery.REQUESTS.UPDATE: return HTTPClient.METHOD_PATCH
         SupabaseQuery.REQUESTS.DELETE: return HTTPClient.METHOD_DELETE
+        _: return HTTPClient.METHOD_POST
 
 func push_request(httprequest : HTTPRequest) -> void:
     _handler = httprequest
@@ -42,12 +44,11 @@ func _on_task_completed(result : int, response_code : int, headers : PoolStringA
     if response_code in [200, 201, 204]:
         complete(result_body)
     else:
-        if result_body == null : result_body = {}
         var supabase_error : SupabaseDatabaseError = SupabaseDatabaseError.new(result_body)
-        complete([], supabase_error)
-    _query.clean()
+        complete(null, supabase_error)
+    if _query!=null: _query.clean()
 
-func complete(_result : Array,  _error : SupabaseDatabaseError = null) -> void:
+func complete(_result,  _error : SupabaseDatabaseError = null) -> void:
     data = _result
     error = _error
     _handler.queue_free()

@@ -10,7 +10,11 @@ var query_struct : Dictionary = {
     like = PoolStringArray([]),
     ilike = PoolStringArray([]),
     IS = PoolStringArray([]),
-    in = PoolStringArray([])
+    in = PoolStringArray([]),
+    fts = PoolStringArray([]),
+    plfts = PoolStringArray([]),
+    phfts = PoolStringArray([]),
+    wfts = PoolStringArray([])
    }
 
 var query : String = ""
@@ -47,7 +51,11 @@ enum Filters {
     LIKE,
     ILIKE,
     IS,
-    IN
+    IN,
+    FTS,
+    PLFTS,
+    PHFLTS,
+    WFTS
    }
 
 func _init():
@@ -62,7 +70,7 @@ func build_query() -> String:
             "select", "order":
                 if query_struct[key].empty(): continue
                 query += (key + "=" + PoolStringArray(query_struct[key]).join(",")+"&")
-            "eq", "neq", "lt", "gt", "lte", "gte", "like", "ilike", "IS", "in":
+            "eq", "neq", "lt", "gt", "lte", "gte", "like", "ilike", "IS", "in", "fts", "plfts", "phfts", "wfts":
                 query += PoolStringArray(query_struct[key]).join("&")
     return query
 
@@ -115,7 +123,7 @@ func order(column : String, direction : int = Directions.Ascending, nullsorder :
 
 ## [FILTERS] -------------------------------------------------------------------- 
 
-func filter(column : String, filter : int, value : String) -> SupabaseQuery:
+func filter(column : String, filter : int, value : String, _props : Dictionary = {}) -> SupabaseQuery:
     var filter_str : String
     match filter:
         Filters.EQUAL: filter_str = "eq"
@@ -128,8 +136,15 @@ func filter(column : String, filter : int, value : String) -> SupabaseQuery:
         Filters.ILIKE: filter_str = "ilike"
         Filters.IS: filter_str = "is"
         Filters.IN: filter_str = "in"
+        Filters.FTS: filter_str = "fts"
+        Filters.PLFTS: filter_str = "plfts"
+        Filters.PHFTS: filter_str = "phfts"
+        Filters.WFTS: filter_str = "wfts"
     var array : PoolStringArray = query_struct[filter_str] as PoolStringArray
-    array.append("%s=%s.%s" % [column, filter_str, value])
+    var struct_filter : String = filter_str
+    if _props.has("config"):
+        struct_filter+= "({config})".format(_props)
+    array.append("%s=%s.%s" % [column, struct_filter, value])
     query_struct[filter_str] = array
     return self
         
@@ -194,6 +209,20 @@ func Or(column : String, value : String) -> SupabaseQuery:
     filter(column, Filters.OR, value)
     return self
 
+# Text Search
+func text_seach(column : String, query : String, _named_properties : Dictionary = {}) -> SupabaseQuery:
+    var type : String = _named_properties.get("type", "")
+    var filter : int
+    match type:
+        "plain": filter = Filters.PLFTS
+        "phrase": filter = Filters.PHFLTS
+        "websearch": filter = Filters.WFTS
+        _: filter = Filters.FTS
+    _named_properties.erase("type")
+    query = query.replacen(" ", "%20")
+    filter(column, filter, query, _named_properties)
+    return self
+
 func clean() -> void:
     query = ""
     body = ""
@@ -213,6 +242,10 @@ func clean() -> void:
     query_struct.ilike = PoolStringArray([])
     query_struct.IS = PoolStringArray([])
     query_struct.in = PoolStringArray([])
+    query_struct.fts = PoolStringArray([])
+    query_struct.plfts = PoolStringArray([])
+    query_struct.phfts = PoolStringArray([])
+    query_struct.wfts = PoolStringArray([])
 
 
 func _to_string() -> String:

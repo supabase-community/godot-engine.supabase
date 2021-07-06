@@ -1,6 +1,16 @@
 class_name SupabaseAuth
 extends Node
 
+class Providers:
+    const APPLE := "apple"
+    const BITBUCKET := "bitbucket"
+    const DISCORD := "discord"
+    const FACEBOOK := "facebook"
+    const GITHUB := "github"
+    const GITLAB := "gitlab"
+    const GOOGLE := "google"
+    const TWITTER := "twitter"
+
 signal signed_up(signed_user)
 signal signed_in(signed_user)
 signal logged_out()
@@ -13,8 +23,9 @@ signal user_invited()
 signal error(supabase_error)
 
 const _auth_endpoint : String = "/auth/v1"
-const _signup_endpoint : String = _auth_endpoint+"/signup"
+const _provider_endpoint : String = _auth_endpoint+"/authorize"
 const _signin_endpoint : String = _auth_endpoint+"/token?grant_type=password"
+const _signup_endpoint : String = _auth_endpoint+"/signup"
 const _refresh_token_endpoint : String = _auth_endpoint+"/token?grant_type=refresh_token"
 const _logout_endpoint : String = _auth_endpoint+"/logout"
 const _user_endpoint : String = _auth_endpoint+"/user"
@@ -31,11 +42,14 @@ var _bearer : PoolStringArray = ["Authorization: Bearer %s"]
 var _auth : String = ""
 var _expires_in : float = 0
 
+var _pooled_tasks : Array = []
+
 var client : SupabaseUser
 
 func _init(conf : Dictionary, head : PoolStringArray) -> void:
     _config = conf
     _header = head
+    name = "Authentication"
 
 
 # Allow your users to sign up and create a new account.
@@ -61,6 +75,17 @@ func sign_in(email : String, password : String = "") -> AuthTask:
     _process_task(auth_task)
     return auth_task
 
+# Sign in with a Provider
+# @provider = Providers.PROVIDER
+func sign_in_with_provider(provider : String) -> AuthTask:
+    var payload : Dictionary = {}
+    var auth_task : AuthTask = AuthTask.new(
+        AuthTask.Task.SIGNIN,
+        _config.supabaseUrl + _provider_endpoint + "?provider=" + provider, 
+        _header,
+        payload)
+    _process_task(auth_task)
+    return auth_task
 
 # If a user is logged in, this will log it out
 func sign_out() -> AuthTask:
@@ -158,12 +183,15 @@ func _get_link_response(delta : float) -> void:
 # Process a specific task
 func _process_task(task : AuthTask) -> void:
     var httprequest : HTTPRequest = HTTPRequest.new()
+    httprequest.use_threads = true
     add_child(httprequest)
     task.connect("completed", self, "_on_task_completed")
     task.push_request(httprequest)
+    _pooled_tasks.append(task)
 
 
 func _on_task_completed(task : AuthTask) -> void:
+    task._handler.queue_free()
     if task.user != null:
         client = task.user
         _auth = client.access_token
@@ -197,4 +225,5 @@ func _on_task_completed(task : AuthTask) -> void:
                 _expires_in = 0
     elif task.error != null:
         emit_signal("error", task.error)
+    
 

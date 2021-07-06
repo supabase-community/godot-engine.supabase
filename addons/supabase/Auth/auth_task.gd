@@ -48,8 +48,8 @@ func match_code(code : int) -> int:
 
 func push_request(httprequest : HTTPRequest) -> void:
     _handler = httprequest
-    httprequest.connect("request_completed", self, "_on_task_completed")
-    httprequest.request(_endpoint, _headers, true, _method, to_json(_payload))
+    _handler.connect("request_completed", self, "_on_task_completed")
+    _handler.request(_endpoint, _headers, true, _method, to_json(_payload))
 
 func _on_task_completed(result : int, response_code : int, headers : PoolStringArray, body : PoolByteArray) -> void:
     var result_body : Dictionary = JSON.parse(body.get_string_from_utf8()).result if body.get_string_from_utf8() else {}
@@ -72,6 +72,6 @@ func complete(_user : SupabaseUser = null, _data : Dictionary = {},  _error : Su
     user = _user
     data = _data
     error = _error
-    _handler.queue_free()
     emit_signal("completed", self)
+
         
