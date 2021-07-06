@@ -52,7 +52,11 @@ func connect_client() -> int:
     return err
 
 func disconnect_client() -> void:
-    pass
+    _ws_client.disconnect("connection_closed", self, "_closed")
+    _ws_client.disconnect("connection_error", self, "_closed")
+    _ws_client.disconnect("connection_established", self, "_connected")
+    _ws_client.disconnect("data_received", self, "_on_data")
+    _heartbeat_timer.connect("timeout", self, "_on_timeout")
 
 func _build_topic(schema : String, table : String = "", col_value : String = "") -> String:
     var topic : String = "realtime:"+schema
