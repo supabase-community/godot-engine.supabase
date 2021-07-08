@@ -211,17 +211,15 @@ func Or(column : String, value : String) -> SupabaseQuery:
     return self
 
 # Text Search
-func text_seach(column : String, query : String, _named_properties : Dictionary = {}) -> SupabaseQuery:
-    var type : String = _named_properties.get("type", "")
+func text_seach(column : String, query : String, type : String = "", config : String = "") -> SupabaseQuery:
     var filter : int
     match type:
         "plain": filter = Filters.PLFTS
         "phrase": filter = Filters.PHFLTS
         "websearch": filter = Filters.WFTS
         _: filter = Filters.FTS
-    _named_properties.erase("type")
     query = query.replacen(" ", "%20")
-    filter(column, filter, query, _named_properties)
+    filter(column, filter, query, {config = config})
     return self
 
 func clean() -> void:
