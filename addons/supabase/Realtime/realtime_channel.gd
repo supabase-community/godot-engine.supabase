@@ -14,7 +14,7 @@ func _init(topic : String, client) -> void:
     self.topic = topic
     _client = client
 
-func publish(message : Dictionary):
+func _publish(message : Dictionary) -> void:
     if not subscribed: return
     match message.event:
         _client.SupabaseEvents.DELETE:
@@ -24,12 +24,15 @@ func publish(message : Dictionary):
         _client.SupabaseEvents.INSERT:
             emit_signal("insert", message.payload.record, self)
     emit_signal("all", message.payload.get("old_record", {}), message.payload.get("new_record", {}), self)
-        
+  
+func on(event : String, to : Object, function : String) -> RealtimeChannel:
+    connect(event, to, function)
+    return self      
             
-func subscribe():
+func subscribe() -> RealtimeChannel:
     if subscribed: 
         _client._error("Already subscribed to topic: %s" % topic)
-        return
+        return self
     _client.send_message({
       "topic": topic,
       "event": _client.PhxEvents.JOIN,
@@ -37,12 +40,13 @@ func subscribe():
       "ref": null
     })
     subscribed = true
+    return self
 
             
-func unsubscribe():
+func unsubscribe() -> RealtimeChannel:
     if not subscribed: 
         _client._error("Already unsubscribed from topic: %s" % topic)
-        return
+        return self
     _client.send_message({
       "topic": topic,
       "event": _client.PhxEvents.LEAVE,
@@ -50,6 +54,7 @@ func unsubscribe():
       "ref": null
     })
     subscribed = false
+    return self
     
-func remove() -> void:
-    _client.erase(self)
+func close() -> void:
+    _client._remove_channel(self)

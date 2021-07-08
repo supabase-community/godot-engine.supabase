@@ -34,6 +34,7 @@ const _invite_endpoint : String = _auth_endpoint+"/invite"
 const _reset_password_endpoint : String = _auth_endpoint+"/recover"
 
 var tcp_server : TCP_Server = TCP_Server.new()
+var tcp_timer : Timer = Timer.new()
 
 var _config : Dictionary = {}
 var _header : PoolStringArray = []
@@ -77,15 +78,11 @@ func sign_in(email : String, password : String = "") -> AuthTask:
 
 # Sign in with a Provider
 # @provider = Providers.PROVIDER
-func sign_in_with_provider(provider : String) -> AuthTask:
-    var payload : Dictionary = {}
-    var auth_task : AuthTask = AuthTask.new(
-        AuthTask.Task.SIGNIN,
-        _config.supabaseUrl + _provider_endpoint + "?provider=" + provider, 
-        _header,
-        payload)
-    _process_task(auth_task)
-    return auth_task
+func sign_in_with_provider(provider : String, grab_from_browser : bool = true, port : int = 3000) -> void:
+    OS.shell_open(_config.supabaseUrl + _provider_endpoint + "?provider="+provider)
+    # ! to be implemented
+    pass
+
 
 # If a user is logged in, this will log it out
 func sign_out() -> AuthTask:
@@ -177,6 +174,7 @@ func _get_link_response(delta : float) -> void:
     var peer : StreamPeer = tcp_server.take_connection()
     if peer != null:
         var raw_result : String = peer.get_utf8_string(peer.get_available_bytes())
+        return raw_result
     else:
         _get_link_response(delta)
 
@@ -210,8 +208,6 @@ func _on_task_completed(task : AuthTask) -> void:
     elif task.data == null:
         match task._code:
             AuthTask.Task.MAGICLINK:
-                tcp_server.listen(3000)
-                _get_link_response(0.5)
                 emit_signal("magic_link_sent")
             AuthTask.Task.RECOVER:
                 emit_signal("reset_email_sent")
@@ -227,3 +223,8 @@ func _on_task_completed(task : AuthTask) -> void:
         emit_signal("error", task.error)
     
 
+# A timer used to listen through TCP on the redirect uri of the request
+func _tcp_stream_timer() -> void:
+    var peer : StreamPeer = tcp_server.take_connection()
+    # ! to be implemented
+    pass

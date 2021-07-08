@@ -31,6 +31,8 @@ func _init(url : String, apikey : String, timeout : float) -> void:
     _db_url = url.replace("http","ws")+"/realtime/v1/websocket"
     _apikey = apikey
     _heartbeat_timer.set_wait_time(timeout)
+    _heartbeat_timer.name = "PhxHeartbeat"
+    name = "RealtimeClient"
     
 func _ready() -> void:
     add_child(_heartbeat_timer)
@@ -44,7 +46,7 @@ func _connect_signals() -> void:
 
 func _disconnect_signals() -> void:
     _ws_client.disconnect("connection_closed", self, "_closed")
-    _ws_client.disconnect("connection_error", self, "_closed")
+    _ws_client.disconnect("connection_error", self, "_error")
     _ws_client.disconnect("connection_established", self, "_connected")
     _ws_client.disconnect("data_received", self, "_on_data")
     _heartbeat_timer.disconnect("timeout", self, "_on_timeout")
@@ -61,6 +63,9 @@ func connect_client() -> int:
 
 func disconnect_client() -> void:
     _ws_client.disconnect_from_host(1000, "Disconnection requested from client.")
+
+func remove_client() -> void:
+    queue_free()
 
 func channel(schema : String, table : String = "", col_value : String = "") -> RealtimeChannel:
     var topic : String = _build_topic(schema, table, col_value)
@@ -81,39 +86,48 @@ func _build_topic(schema : String, table : String = "", col_value : String = "")
 func _add_channel(channel : RealtimeChannel) -> void:
     channels.append(channel)
 
+func _remove_channel(channel : RealtimeChannel) -> void:
+    channels.erase(channel)
+
 func _connected(proto = ""):
     emit_signal("connected")
     set_process(true)
 
 func _closed(was_clean : bool = false):
-    emit_signal("disconnected")
+    channels = []
     _disconnect_signals()
+    emit_signal("disconnected")
     set_process(false)
 
-func _error(msg : String = "") : 
+func _error(msg : String = "") -> void: 
     emit_signal("error", msg)
 
 func _on_data() -> void:
     var data : Dictionary = get_message(_ws_client.get_peer(1).get_packet())
+    print(data)
     match data.event:
         PhxEvents.REPLY:
             if _check_response(data) == 0:
-                print("Received reply = "+to_json(data))
+                pass
+#                print("Received reply = "+to_json(data))
         PhxEvents.JOIN:
             if _check_response(data) == 0:
-                print("Joined topic '%s'" % data.topic)
+                pass
+#                print("Joined topic '%s'" % data.topic)
         PhxEvents.LEAVE:
             if _check_response(data) == 0:
-                print("Left topic '%s'" % data.topic)
+                pass
+#                print("Left topic '%s'" % data.topic)
         PhxEvents.CLOSE:
-            print("Channel closed.")
+            pass
+#            print("Channel closed.")
         PhxEvents.ERROR:
             emit_signal("error", data.payload)
         SupabaseEvents.DELETE, SupabaseEvents.INSERT, SupabaseEvents.UPDATE:
-            print("Received %s event..." % data.event)
+#            print("Received %s event..." % data.event)
             var channel : RealtimeChannel = get_channel(data.topic)
             if channel != null:
-                channel.publish(data)
+                channel._publish(data)
 
 func get_channel(topic : String) -> RealtimeChannel:
     for channel in channels:
