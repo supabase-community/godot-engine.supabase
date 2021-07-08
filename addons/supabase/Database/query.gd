@@ -64,6 +64,7 @@ func _init():
 # Build the query from the scrut
 func build_query() -> String:
     for key in query_struct:
+        if query_struct[key].empty(): continue
         match key:
             "table":
                 query += query_struct[key]
@@ -249,4 +250,4 @@ func clean() -> void:
 
 
 func _to_string() -> String:
-    return "QUERY: " + query
+    return build_query()
