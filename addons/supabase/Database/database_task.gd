@@ -17,14 +17,18 @@ var error : SupabaseDatabaseError
 
 var _handler : HTTPRequest
 
-func _init(query : SupabaseQuery, code : int, endpoint : String, headers : PoolStringArray,  payload : String = ""):
+func _init(data = null, error : SupabaseDatabaseError = null) -> void:
+    self.data = data
+    self.error = error
+
+func _setup(query : SupabaseQuery, code : int, endpoint : String, headers : PoolStringArray,  payload : String = ""):
     _query = query
     _code = code
     _endpoint = endpoint
     _headers = headers
     _payload = payload
     _method = match_code(code)
-    
+
 
 func match_code(code : int) -> int:
     match code:
@@ -51,5 +55,5 @@ func _on_task_completed(result : int, response_code : int, headers : PoolStringA
 func complete(_result,  _error : SupabaseDatabaseError = null) -> void:
     data = _result
     error = _error
-    _handler.queue_free()
+    if _handler : _handler.queue_free()
     emit_signal("completed", self)
