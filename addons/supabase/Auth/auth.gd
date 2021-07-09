@@ -76,6 +76,13 @@ func sign_in(email : String, password : String = "") -> AuthTask:
     _process_task(auth_task)
     return auth_task
 
+
+# Sign in as an anonymous user
+func sign_in_anonymous() -> void:
+    _auth = _config.supabaseKey
+    _bearer[0] = _bearer[0] % _auth
+    emit_signal("signed_in", null)
+
 # Sign in with a Provider
 # @provider = Providers.PROVIDER
 func sign_in_with_provider(provider : String, grab_from_browser : bool = true, port : int = 3000) -> void:

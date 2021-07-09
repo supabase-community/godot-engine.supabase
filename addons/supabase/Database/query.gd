@@ -219,7 +219,7 @@ func text_seach(column : String, query : String, type : String = "", config : St
         "websearch": filter = Filters.WFTS
         _: filter = Filters.FTS
     query = query.replacen(" ", "%20")
-    filter(column, filter, query, {config = config})
+    filter(column, filter, query, {config = config} if config != "" else {})
     return self
 
 func clean() -> void:

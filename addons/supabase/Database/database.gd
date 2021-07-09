@@ -26,7 +26,8 @@ func _init(conf : Dictionary, head : PoolStringArray) -> void:
 func query(supabase_query : SupabaseQuery) -> DatabaseTask:
     _bearer = Supabase.auth._bearer
     var endpoint : String = _config.supabaseUrl + _rest_endpoint + supabase_query.build_query()
-    var task : DatabaseTask = DatabaseTask.new(
+    var task : DatabaseTask = DatabaseTask.new()
+    task._setup(
         supabase_query,
         supabase_query.request, 
         endpoint, 
@@ -39,7 +40,8 @@ func query(supabase_query : SupabaseQuery) -> DatabaseTask:
 func rpc(function_name : String, arguments : Dictionary = {}, supabase_query : SupabaseQuery = null) -> DatabaseTask:
     _bearer = Supabase.auth._bearer
     var endpoint : String = _config.supabaseUrl + _rest_endpoint + "rpc/{function}".format({function = function_name}) + (supabase_query.build_query() if supabase_query!=null else "")
-    var task : DatabaseTask = DatabaseTask.new(
+    var task : DatabaseTask = DatabaseTask.new()
+    task._setup(
         supabase_query,
         -2, 
         endpoint, 
@@ -57,7 +59,7 @@ func _process_task(task : DatabaseTask) -> void:
 
 # .............. HTTPRequest completed
 func _on_task_completed(task : DatabaseTask) -> void:
-    task._handler.queue_free()
+    if task._handler != null: task._handler.queue_free()
     if task.data!=null and not task.data.empty():    
         match task._code:
             SupabaseQuery.REQUESTS.SELECT: emit_signal("selected", task.data)
