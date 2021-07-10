@@ -5,16 +5,17 @@ const MIME_TYPES : Dictionary = {
     "bmp": "image/bmp",
     "css": "text/css",
     "csv": "text/csv",
-    "gd": "text/gdscript",
+    "gd": "text/plain",
     "htm": "text/html",
     "html": "text/html",
     "jpeg": "image/jpeg",
     "jpg": "image/jpeg",
-    "json": "text/json",
+    "json": "application/json",
     "mp3": "audio/mpeg",
     "mpeg": "video/mpeg",
     "ogg": "audio/ogg",
     "ogv": "video/ogg",
+    "pdf": "application/pdf",
     "png": "image/png",
     "res": "text/plain",
     "shader": "text/plain",
@@ -23,7 +24,7 @@ const MIME_TYPES : Dictionary = {
     "tiff": "image/tiff",
     "tres": "text/plain",
     "tscn": "text/plain",
-    "txt": "text/plain",
+    "txt": "text/script",
     "wav": "audio/wav",
     "webm": "video/webm",
     "webp": "video/webm",
@@ -292,8 +293,6 @@ func _on_task_completed(task : StorageTask) -> void:
             task.METHODS.REMOVE: emit_signal("removed_objects", task.data)
             task.METHODS.CREATE_SIGNED_URL: emit_signal("created_signed_url", task.data)
             task.METHODS.DOWNLOAD: emit_signal("downloaded_object", task.data)
-            _:
-                emit_signal("rpc_completed", task.data)
     elif task.error != null:
         emit_signal("error", task.error)
 
