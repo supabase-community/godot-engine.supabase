@@ -8,6 +8,10 @@ A lightweight addon which integrates Supabase APIs for Godot Engine out of the b
 - [x] Realtime (/realtime)
 - [x] Storage (/storage)
 
+
+### UI Library
+A drag&drop UI Library is available at [supabase-ui](https://github.com/fenix-hub/godot-engine.supabase-ui).
+
 ### examples and demos
 A collection of examples and live demos is available at [*fenix-hub/godot-engine.supabase-examples*](https://github.com/fenix-hub/godot-engine.supabase-examples), both with source code and exported binaries.  
 
