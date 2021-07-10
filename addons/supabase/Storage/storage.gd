@@ -120,11 +120,9 @@ func _on_task_completed(task : StorageTask) -> void:
         match task._code:
             task.METHODS.LIST_BUCKETS: emit_signal("listed_buckets", task.data)
             task.METHODS.GET_BUCKET: emit_signal("got_bucket", task.data)
-            task.METHODS.CREATE_BUCKET: emit_signal("created_bucket", task.data)
-            task.METHODS.UPDATE_BUCKET: emit_signal("updated_bucket", task.data)
-            task.METHODS.EMPTY_BUCKET: emit_signal("emptied_bucket", task.data)
+            task.METHODS.CREATE_BUCKET: emit_signal("created_bucket", from(task.data.name))
+            task.METHODS.UPDATE_BUCKET: emit_signal("updated_bucket", from(task.data.name))
+            task.METHODS.EMPTY_BUCKET: emit_signal("emptied_bucket", from(task.data.name))
             task.METHODS.DELETE_BUCKET: emit_signal("deleted_bucket", task.data)
-            _:
-                emit_signal("rpc_completed", task.data)
     elif task.error != null:
         emit_signal("error", task.error)
