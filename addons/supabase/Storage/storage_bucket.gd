@@ -160,7 +160,7 @@ func create_signed_url(object : String, expires_in : int = 60000) -> StorageTask
     return task
 
 
-func download(object : String, to_path : String, private : bool = false) -> StorageTask:
+func download(object : String, to_path : String = "", private : bool = false) -> StorageTask:
     if not private:
         _bearer = Supabase.auth._bearer
         var endpoint : String = _config.supabaseUrl + _rest_endpoint + "public/" + id + "/" + object
