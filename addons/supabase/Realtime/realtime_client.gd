@@ -27,7 +27,7 @@ var _ws_client = WebSocketClient.new()
 var _heartbeat_timer : Timer = Timer.new()
 
 func _init(url : String, apikey : String, timeout : float) -> void:
-    set_process(false)
+    set_process_internal(false)
     _db_url = url.replace("http","ws")+"/realtime/v1/websocket"
     _apikey = apikey
     _heartbeat_timer.set_wait_time(timeout)
@@ -52,6 +52,7 @@ func _disconnect_signals() -> void:
     _heartbeat_timer.disconnect("timeout", self, "_on_timeout")
 
 func connect_client() -> int:
+    set_process_internal(true)
     _connect_signals()
     var err = _ws_client.connect_to_url("{url}?apikey={apikey}".format({url = _db_url, apikey = _apikey}))
     if err != OK:
@@ -63,6 +64,7 @@ func connect_client() -> int:
 
 func disconnect_client() -> void:
     _ws_client.disconnect_from_host(1000, "Disconnection requested from client.")
+    set_process_internal(false)
 
 func remove_client() -> void:
     queue_free()
@@ -91,20 +93,18 @@ func _remove_channel(channel : RealtimeChannel) -> void:
 
 func _connected(proto = ""):
     emit_signal("connected")
-    set_process(true)
 
 func _closed(was_clean : bool = false):
     channels = []
     _disconnect_signals()
     emit_signal("disconnected")
-    set_process(false)
+    
 
 func _error(msg : String = "") -> void: 
     emit_signal("error", msg)
 
 func _on_data() -> void:
     var data : Dictionary = get_message(_ws_client.get_peer(1).get_packet())
-    print(data)
     match data.event:
         PhxEvents.REPLY:
             if _check_response(data) == 0:
@@ -162,5 +162,11 @@ func _on_timeout() -> void:
     if _ws_client.get_peer(1).is_connected_to_host():
         _send_heartbeat()
 
-func _process(delta : float) -> void:
+func _notification(what) -> void:
+    match what:
+        NOTIFICATION_INTERNAL_PROCESS:
+            _internal_process(get_process_delta_time())
+
+func _internal_process(_delta : float) -> void:
     _ws_client.poll()
+    

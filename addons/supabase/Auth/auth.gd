@@ -188,7 +188,6 @@ func _get_link_response(delta : float) -> void:
 # Process a specific task
 func _process_task(task : AuthTask) -> void:
     var httprequest : HTTPRequest = HTTPRequest.new()
-    httprequest.use_threads = true
     add_child(httprequest)
     task.connect("completed", self, "_on_task_completed")
     task.push_request(httprequest)

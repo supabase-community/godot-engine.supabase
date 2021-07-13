@@ -65,7 +65,9 @@ var id : String
 func _init(id : String , config : Dictionary) -> void:
     _config = config
     self.id = id
+    _http_client
     name = "Bucket_"+id
+    set_process_internal(false)
 
 
 func list(prefix : String = "", limit : int = 100, offset : int = 0, sort_by : Dictionary = {column = "name", order = "asc"} ) -> StorageTask:
@@ -220,9 +222,7 @@ func _internal_process(_delta : float) -> void:
         HTTPClient.STATUS_DISCONNECTED:
             _http_client.connect_to_host(_config.supabaseUrl, 443, true)
         
-        HTTPClient.STATUS_RESOLVING, \
-        HTTPClient.STATUS_REQUESTING, \
-        HTTPClient.STATUS_CONNECTING:
+        HTTPClient.STATUS_RESOLVING, HTTPClient.STATUS_REQUESTING, HTTPClient.STATUS_CONNECTING:
             _http_client.poll()
 
         HTTPClient.STATUS_CONNECTED:
@@ -254,9 +254,9 @@ func _internal_process(_delta : float) -> void:
                     if _content_length != 0:
                         pass
                 if _http_client.get_status() != HTTPClient.STATUS_BODY:
-                    task._on_task_completed(0, _response_code, _response_headers, _response_data)
+                    task._on_task_completed(0, _response_code, _response_headers, [])
             else:
-                task._on_task_completed(0, _response_code, _response_headers, _response_data)
+                task._on_task_completed(0, _response_code, _response_headers, [])
                 
         HTTPClient.STATUS_CANT_CONNECT:
             task.error = SupabaseStorageError.new({statusCode = HTTPRequest.RESULT_CANT_CONNECT})
@@ -305,3 +305,4 @@ func _clear_raw_request() -> void:
     _content_length = -1
     _response_code = -1
     set_process_internal(requesting_raw)
+    _http_client.close()
