@@ -22,6 +22,11 @@ func _init(config : Dictionary) -> void:
     _config = config
     name = "Storage"
 
+func _ready() -> void:
+    var buckets : Node = Node.new()
+    buckets.set_name("Buckets")
+    add_child(buckets)
+
 func list_buckets() -> StorageTask:
     _bearer = Supabase.auth._bearer
     var endpoint : String = _config.supabaseUrl + _rest_endpoint + "bucket"
@@ -97,7 +102,7 @@ func delete_bucket(id : String) -> StorageTask:
 
 
 func from(id : String) -> StorageBucket:
-    for bucket in get_children():
+    for bucket in get_node("Buckets").get_children():
         if bucket.id == id:
             return bucket
     var storage_bucket : StorageBucket = StorageBucket.new(id, _config)
@@ -126,3 +131,4 @@ func _on_task_completed(task : StorageTask) -> void:
             task.METHODS.DELETE_BUCKET: emit_signal("deleted_bucket", task.data)
     elif task.error != null:
         emit_signal("error", task.error)
+    _pooled_tasks.erase(task)
