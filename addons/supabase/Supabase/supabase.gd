@@ -23,11 +23,17 @@ func _ready() -> void:
 
 # Load all config settings from ProjectSettings
 func load_config() -> void:
-    if ProjectSettings.has_setting(ENVIRONMENT_VARIABLES+"supabaseUrl"):
-        for key in config.keys(): 
-            var setting : String = ProjectSettings.get_setting(ENVIRONMENT_VARIABLES+key)
-            config[key] = setting if setting!=null and setting!="" else config[key]
-    else: printerr("No configuration settings found, add them in override.cfg file.")
+    if config.supabaseKey != "" and config.supabaseUrl != "":
+        return
+    for key in config.keys(): 
+        if ProjectSettings.has_setting(ENVIRONMENT_VARIABLES+key):
+            var value : String = ProjectSettings.get_setting(ENVIRONMENT_VARIABLES+key)
+            if value == "":
+                printerr("%s has not a valid value." % key)
+            else:
+                config[key] = value
+        else:
+            printerr("%s key is not defined." % key)
     header.append("apikey: %s"%[config.supabaseKey])
 
 func load_nodes() -> void:
