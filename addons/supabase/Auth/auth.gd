@@ -227,6 +227,7 @@ func _on_task_completed(task : AuthTask) -> void:
                 _expires_in = 0
     elif task.error != null:
         emit_signal("error", task.error)
+    _pooled_tasks.erase(task)
     
 
 # A timer used to listen through TCP on the redirect uri of the request

@@ -24,7 +24,7 @@ const MIME_TYPES : Dictionary = {
     "tiff": "image/tiff",
     "tres": "text/plain",
     "tscn": "text/plain",
-    "txt": "text/script",
+    "txt": "text/plain",
     "wav": "audio/wav",
     "webm": "video/webm",
     "webp": "video/webm",
@@ -92,6 +92,7 @@ func upload(object : String, file_path : String) -> StorageTask:
     var file : File = File.new()
     var error : int = file.open(file_path, File.READ)
     if error != OK: 
+        printerr("There was an error opening the file at path: ", file_path)
         task.complete({})
         return task
     var header : PoolStringArray = [_header[0] % MIME_TYPES.get(object.get_extension(), "application/octet-stream")]
@@ -295,6 +296,7 @@ func _on_task_completed(task : StorageTask) -> void:
             task.METHODS.DOWNLOAD: emit_signal("downloaded_object", task.data)
     elif task.error != null:
         emit_signal("error", task.error)
+    _pooled_tasks.erase(task)
 
 func _clear_raw_request() -> void:
     requesting_raw = false
