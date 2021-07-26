@@ -70,3 +70,4 @@ func _on_task_completed(task : DatabaseTask) -> void:
                 emit_signal("rpc_completed", task.data)
     elif task.error != null:
         emit_signal("error", task.error)
+    _pooled_tasks.erase(task)

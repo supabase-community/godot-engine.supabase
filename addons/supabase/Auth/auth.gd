@@ -228,7 +228,6 @@ func _on_task_completed(task : AuthTask) -> void:
     elif task.error != null:
         emit_signal("error", task.error)
     _pooled_tasks.erase(task)
-    
 
 # A timer used to listen through TCP on the redirect uri of the request
 func _tcp_stream_timer() -> void:
