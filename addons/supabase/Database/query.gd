@@ -18,6 +18,7 @@ var query_struct : Dictionary = {
    }
 
 var query : String = ""
+var raw_query : String = ""
 var header : PoolStringArray = []
 var request : int
 var body : String = ""
@@ -58,21 +59,27 @@ enum Filters {
     WFTS
    }
 
-func _init():
-    pass
+func _init(_raw_query : String = "", _raw_type : int = -1, _raw_header : PoolStringArray = [], _raw_body : String = ""):
+    if _raw_query != "":
+        raw_query = _raw_query
+        query = _raw_query
+        request = _raw_type
+        header = _raw_header as PoolStringArray
+        body = _raw_body
 
 # Build the query from the scrut
 func build_query() -> String:
-    for key in query_struct:
-        if query_struct[key].empty(): continue
-        match key:
-            "table":
-                query += query_struct[key]
-            "select", "order":
-                if query_struct[key].empty(): continue
-                query += (key + "=" + PoolStringArray(query_struct[key]).join(",")+"&")
-            "eq", "neq", "lt", "gt", "lte", "gte", "like", "ilike", "IS", "in", "fts", "plfts", "phfts", "wfts":
-                query += PoolStringArray(query_struct[key]).join("&")
+    if raw_query == "" and query == raw_query:
+        for key in query_struct:
+            if query_struct[key].empty(): continue
+            match key:
+                "table":
+                    query += query_struct[key]
+                "select", "order":
+                    if query_struct[key].empty(): continue
+                    query += (key + "=" + PoolStringArray(query_struct[key]).join(",")+"&")
+                "eq", "neq", "lt", "gt", "lte", "gte", "like", "ilike", "IS", "in", "fts", "plfts", "phfts", "wfts":
+                    query += PoolStringArray(query_struct[key]).join("&")
     return query
 
 

@@ -24,7 +24,7 @@ const MIME_TYPES : Dictionary = {
     "tiff": "image/tiff",
     "tres": "text/plain",
     "tscn": "text/plain",
-    "txt": "text/plain",
+    "txt": "text/script",
     "wav": "audio/wav",
     "webm": "video/webm",
     "webp": "video/webm",
@@ -84,7 +84,7 @@ func list(prefix : String = "", limit : int = 100, offset : int = 0, sort_by : D
     return task
 
 
-func upload(object : String, file_path : String) -> StorageTask:
+func upload(object : String, file_path : String, upsert : bool = false) -> StorageTask:
     requesting_raw = true
     _bearer = Supabase.auth._bearer
     var task : StorageTask = StorageTask.new()
@@ -92,17 +92,16 @@ func upload(object : String, file_path : String) -> StorageTask:
     var file : File = File.new()
     var error : int = file.open(file_path, File.READ)
     if error != OK: 
-        printerr("There was an error opening the file at path: ", file_path)
         task.complete({})
         return task
-    var header : PoolStringArray = [_header[0] % MIME_TYPES.get(object.get_extension(), "application/octet-stream")]
+    var header : PoolStringArray = [_header[0] % MIME_TYPES.get(file_path.get_extension(), "application/octet-stream")]
     header.append("Content-Length: %s" % file.get_len())
     task.connect("completed", self, "_on_task_completed")
     task._setup(
         task.METHODS.UPLOAD_OBJECT, 
         endpoint, 
         header + _bearer,
-        "",
+        to_json({upsert = upsert}),
         file.get_buffer(file.get_len())
     )
     _current_task = task
