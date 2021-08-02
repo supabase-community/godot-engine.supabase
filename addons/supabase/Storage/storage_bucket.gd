@@ -84,7 +84,7 @@ func list(prefix : String = "", limit : int = 100, offset : int = 0, sort_by : D
     return task
 
 
-func upload(object : String, file_path : String, upsert : bool = false) -> StorageTask:
+func upload(object : String, file_path : String) -> StorageTask:
     requesting_raw = true
     _bearer = Supabase.auth._bearer
     var task : StorageTask = StorageTask.new()
@@ -92,6 +92,7 @@ func upload(object : String, file_path : String, upsert : bool = false) -> Stora
     var file : File = File.new()
     var error : int = file.open(file_path, File.READ)
     if error != OK: 
+        printerr("could not open %s "%file_path)
         task.complete({})
         return task
     var header : PoolStringArray = [_header[0] % MIME_TYPES.get(file_path.get_extension(), "application/octet-stream")]
@@ -101,7 +102,7 @@ func upload(object : String, file_path : String, upsert : bool = false) -> Stora
         task.METHODS.UPLOAD_OBJECT, 
         endpoint, 
         header + _bearer,
-        to_json({upsert = upsert}),
+        "",
         file.get_buffer(file.get_len())
     )
     _current_task = task

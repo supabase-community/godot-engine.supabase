@@ -1,6 +1,6 @@
 extends Node
 
-const ENVIRONMENT_VARIABLES : String = "supabase/config/"
+const ENVIRONMENT_VARIABLES : String = "supabase/config"
 
 var auth : SupabaseAuth 
 var database : SupabaseDatabase
@@ -24,16 +24,19 @@ func _ready() -> void:
 # Load all config settings from ProjectSettings
 func load_config() -> void:
     if config.supabaseKey != "" and config.supabaseUrl != "":
-        return
-    for key in config.keys(): 
-        if ProjectSettings.has_setting(ENVIRONMENT_VARIABLES+key):
-            var value : String = ProjectSettings.get_setting(ENVIRONMENT_VARIABLES+key)
-            if value == "":
-                printerr("%s has not a valid value." % key)
-            else:
-                config[key] = value
+        pass
+    else:    
+        var env = ConfigFile.new()
+        var err = env.load("res://addons/supabase/.env")
+        if err == OK:
+            for key in config.keys(): 
+                var value : String = env.get_value(ENVIRONMENT_VARIABLES, key, "")
+                if value == "":
+                    printerr("%s has not a valid value." % key)
+                else:
+                    config[key] = value
         else:
-            printerr("%s key is not defined." % key)
+            printerr("Unable to read .env file at path 'res://.env'")
     header.append("apikey: %s"%[config.supabaseKey])
 
 func load_nodes() -> void:

@@ -5,11 +5,12 @@ var query_struct : Dictionary = {
     table = "",
     select = PoolStringArray([]),
     order = PoolStringArray([]),
+    Or = PoolStringArray([]),
     eq = PoolStringArray([]),
     neq = PoolStringArray([]),
     like = PoolStringArray([]),
     ilike = PoolStringArray([]),
-    IS = PoolStringArray([]),
+    Is = PoolStringArray([]),
     in = PoolStringArray([]),
     fts = PoolStringArray([]),
     plfts = PoolStringArray([]),
@@ -56,7 +57,8 @@ enum Filters {
     FTS,
     PLFTS,
     PHFLTS,
-    WFTS
+    WFTS,
+    OR
    }
 
 func _init(_raw_query : String = "", _raw_type : int = -1, _raw_header : PoolStringArray = [], _raw_body : String = ""):
@@ -72,14 +74,17 @@ func build_query() -> String:
     if raw_query == "" and query == raw_query:
         for key in query_struct:
             if query_struct[key].empty(): continue
+            if query.length() > 0 : if not query[query.length()-1] in ["/","?"]: query+="&"
             match key:
                 "table":
                     query += query_struct[key]
                 "select", "order":
                     if query_struct[key].empty(): continue
-                    query += (key + "=" + PoolStringArray(query_struct[key]).join(",")+"&")
-                "eq", "neq", "lt", "gt", "lte", "gte", "like", "ilike", "IS", "in", "fts", "plfts", "phfts", "wfts":
+                    query += (key + "=" + PoolStringArray(query_struct[key]).join(","))
+                "eq", "neq", "lt", "gt", "lte", "gte", "like", "ilike", "Is", "in", "fts", "plfts", "phfts", "wfts":
                     query += PoolStringArray(query_struct[key]).join("&")
+                "Or":
+                    query += "or=(%s)"%[query_struct[key].join(",")]
     return query
 
 
@@ -90,7 +95,7 @@ func from(table_name : String) -> SupabaseQuery:
 # Insert new Row
 func insert(fields : Array, upsert : bool = false) -> SupabaseQuery:
     request = REQUESTS.INSERT
-    body = JSON.print(fields)
+    body = to_json(fields)
     if upsert : header += PoolStringArray(["Prefer: resolution=merge-duplicates"])
     return self
 
@@ -103,7 +108,7 @@ func select(columns : PoolStringArray = PoolStringArray(["*"])) -> SupabaseQuery
 # Update Rows
 func update(fields : Dictionary) -> SupabaseQuery:
     request = REQUESTS.UPDATE
-    body = JSON.print(fields)
+    body = to_json(fields)
     return self
 
 # Delete Rows
@@ -132,30 +137,43 @@ func order(column : String, direction : int = Directions.Ascending, nullsorder :
 ## [FILTERS] -------------------------------------------------------------------- 
 
 func filter(column : String, filter : int, value : String, _props : Dictionary = {}) -> SupabaseQuery:
-    var filter_str : String
-    match filter:
-        Filters.EQUAL: filter_str = "eq"
-        Filters.NOT_EQUAL: filter_str = "neq"
-        Filters.GREATER_THAN: filter_str = "gt"
-        Filters.LESS_THAN: filter_str = "lt"
-        Filters.GREATER_THAN_OR_EQUAL: filter_str = "gte"
-        Filters.LESS_THAN_OR_EQUAL: filter_str = "lte"
-        Filters.LIKE: filter_str = "like"
-        Filters.ILIKE: filter_str = "ilike"
-        Filters.IS: filter_str = "is"
-        Filters.IN: filter_str = "in"
-        Filters.FTS: filter_str = "fts"
-        Filters.PLFTS: filter_str = "plfts"
-        Filters.PHFTS: filter_str = "phfts"
-        Filters.WFTS: filter_str = "wfts"
+    var filter_str : String = match_filter(filter)
     var array : PoolStringArray = query_struct[filter_str] as PoolStringArray
     var struct_filter : String = filter_str
     if _props.has("config"):
         struct_filter+= "({config})".format(_props)
-    array.append("%s=%s.%s" % [column, struct_filter, value])
+    if _props.has("negate"):
+        struct_filter = ("not."+struct_filter) if _props.get("negate") else struct_filter
+    # Apply custom logic or continue with default logic
+    match filter_str:
+        "Or":
+            if _props.has("queries"):
+                for query in _props.get("queries"):
+                    array.append(query.build_query().replace("=",".") if (not query is String) else query)
+        _:
+            array.append("%s=%s.%s" % [column, struct_filter.to_lower(), value])
     query_struct[filter_str] = array
     return self
-        
+
+func match_filter(filter : int) -> String:
+    var filter_str : String
+    match filter:
+        Filters.EQUAL: filter_str = "eq"
+        Filters.FTS: filter_str = "fts"
+        Filters.ILIKE: filter_str = "ilike"
+        Filters.IN: filter_str = "in"
+        Filters.IS: filter_str = "Is"
+        Filters.GREATER_THAN: filter_str = "gt"
+        Filters.GREATER_THAN_OR_EQUAL: filter_str = "gte"
+        Filters.LIKE: filter_str = "like"
+        Filters.LESS_THAN: filter_str = "lt"
+        Filters.LESS_THAN_OR_EQUAL: filter_str = "lte"
+        Filters.NOT_EQUAL: filter_str = "neq"
+        Filters.OR: filter_str = "Or"
+        Filters.PLFTS: filter_str = "plfts"
+        Filters.PHFTS: filter_str = "phfts"
+        Filters.WFTS: filter_str = "wfts"
+    return filter_str
 
 # Finds all rows whose value on the stated columns match the specified values.
 func match(query_dict : Dictionary) -> SupabaseQuery:
@@ -195,7 +213,7 @@ func lte(column : String, value : String) -> SupabaseQuery:
 
 # Finds all rows whose value in the stated column matches the supplied pattern (case sensitive).
 func like(column : String, value : String) -> SupabaseQuery:
-    filter(column, Filters.LIKE, value)
+    filter(column, Filters.LIKE, "*%s*"%value)
     return self
 
 # Finds all rows whose value in the stated column matches the supplied pattern (case insensitive).
@@ -204,8 +222,8 @@ func ilike(column : String, value : String) -> SupabaseQuery:
     return self
 
 # A check for exact equality (null, true, false), finds all rows whose value on the stated column exactly match the specified value.
-func Is(column : String, value) -> SupabaseQuery:
-    filter(column, Filters.IS, str(value))
+func Is(column : String, value, negate : bool = false) -> SupabaseQuery:
+    filter(column, Filters.IS, str(value), {negate = negate})
     return self
 
 # Finds all rows whose value on the stated column is found on the specified values.
@@ -213,8 +231,8 @@ func In(column : String, array : PoolStringArray) -> SupabaseQuery:
     filter(column, Filters.IN, "("+array.join(",")+")")
     return self
 
-func Or(column : String, value : String) -> SupabaseQuery:
-    filter(column, Filters.OR, value)
+func Or(queries : Array) -> SupabaseQuery:
+    filter("", Filters.OR, "", {queries = queries})
     return self
 
 # Text Search
