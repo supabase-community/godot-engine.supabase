@@ -92,16 +92,18 @@ func upload(object : String, file_path : String, upsert : bool = false) -> Stora
     var file : File = File.new()
     var error : int = file.open(file_path, File.READ)
     if error != OK: 
+        printerr("could not open %s "%file_path)
         task.complete({})
         return task
     var header : PoolStringArray = [_header[0] % MIME_TYPES.get(file_path.get_extension(), "application/octet-stream")]
     header.append("Content-Length: %s" % file.get_len())
+    header.append("x-upsert: %s" % upsert)
     task.connect("completed", self, "_on_task_completed")
     task._setup(
         task.METHODS.UPLOAD_OBJECT, 
         endpoint, 
         header + _bearer,
-        to_json({upsert = upsert}),
+        "",
         file.get_buffer(file.get_len())
     )
     _current_task = task
