@@ -84,7 +84,7 @@ func list(prefix : String = "", limit : int = 100, offset : int = 0, sort_by : D
     return task
 
 
-func upload(object : String, file_path : String) -> StorageTask:
+func upload(object : String, file_path : String, upsert : bool = false) -> StorageTask:
     requesting_raw = true
     _bearer = Supabase.auth._bearer
     var task : StorageTask = StorageTask.new()
@@ -97,6 +97,7 @@ func upload(object : String, file_path : String) -> StorageTask:
         return task
     var header : PoolStringArray = [_header[0] % MIME_TYPES.get(file_path.get_extension(), "application/octet-stream")]
     header.append("Content-Length: %s" % file.get_len())
+    header.append("x-upsert: %s" % upsert)
     task.connect("completed", self, "_on_task_completed")
     task._setup(
         task.METHODS.UPLOAD_OBJECT, 
