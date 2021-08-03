@@ -58,7 +58,8 @@ enum Filters {
     PLFTS,
     PHFLTS,
     WFTS,
-    OR
+    OR,
+    ORDER
    }
 
 func _init(_raw_query : String = "", _raw_type : int = -1, _raw_header : PoolStringArray = [], _raw_body : String = ""):
@@ -131,7 +132,7 @@ func order(column : String, direction : int = Directions.Ascending, nullsorder :
     match nullsorder:
         Nullsorder.First: nullsorder_str = "nullsfirst"
         Nullsorder.Last: nullsorder_str = "nullslast"
-    query_struct.order.append("%s.%s.%s" % [column, direction_str, nullsorder_str])
+    query_struct.order += PoolStringArray([("%s.%s.%s" % [column, direction_str, nullsorder_str])])
     return self
 
 ## [FILTERS] -------------------------------------------------------------------- 
