@@ -12,8 +12,12 @@ class Providers:
     const TWITTER := "twitter"
 
 signal signed_up(signed_user)
+signal signed_up_phone(signed_user)
 signal signed_in(signed_user)
-signal logged_out()
+signal signed_in_otp(signed_user)
+signal otp_verified()
+signal signed_in_anonyous()
+signal signed_out()
 signal got_user()
 signal user_updated(updated_user)
 signal magic_link_sent()
@@ -25,6 +29,8 @@ signal error(supabase_error)
 const _auth_endpoint : String = "/auth/v1"
 const _provider_endpoint : String = _auth_endpoint+"/authorize"
 const _signin_endpoint : String = _auth_endpoint+"/token?grant_type=password"
+const _signin_otp_endpoint : String = _auth_endpoint+"/otp"
+const _verify_otp_endpoint : String = _auth_endpoint+"/verify"
 const _signup_endpoint : String = _auth_endpoint+"/signup"
 const _refresh_token_endpoint : String = _auth_endpoint+"/token?grant_type=refresh_token"
 const _logout_endpoint : String = _auth_endpoint+"/logout"
@@ -50,11 +56,18 @@ var client : SupabaseUser
 func _init(conf : Dictionary, head : PoolStringArray) -> void:
     _config = conf
     _header = head
-    name = "Authentication"
+    name = "Authentication"  
 
+func _check_auth() -> AuthTask:
+    printerr("User already authenticated. Please, logout before authenticating again.")
+    var auth_task : AuthTask = AuthTask.new(-1, "", [], {})
+    auth_task.emit_signal("completed")
+    return auth_task
+    
 
 # Allow your users to sign up and create a new account.
 func sign_up(email : String, password : String) -> AuthTask:
+    if _auth != "": return _check_auth()
     var payload : Dictionary = {"email":email, "password":password}
     var auth_task : AuthTask = AuthTask.new(
         AuthTask.Task.SIGNUP,
@@ -65,8 +78,23 @@ func sign_up(email : String, password : String) -> AuthTask:
     return auth_task
 
 
+# Allow your users to sign up and create a new account using phone/password combination.
+# NOTE: the OTP sent to the user must be verified.
+func sign_up_phone(phone : String, password : String) -> AuthTask:
+    if _auth != "": return _check_auth()
+    var payload : Dictionary = {"phone":phone, "password":password}
+    var auth_task : AuthTask = AuthTask.new(
+        AuthTask.Task.SIGNUPPHONEPASSWORD,
+        _config.supabaseUrl + _signup_endpoint, 
+        _header,
+        payload)
+    _process_task(auth_task)
+    return auth_task
+
+
 # If an account is created, users can login to your app.
 func sign_in(email : String, password : String = "") -> AuthTask:
+    if _auth != "": return _check_auth()
     var payload : Dictionary = {"email":email, "password":password}
     var auth_task : AuthTask = AuthTask.new(
         AuthTask.Task.SIGNIN,
@@ -77,12 +105,57 @@ func sign_in(email : String, password : String = "") -> AuthTask:
     return auth_task
 
 
+# If an account is created, users can login to your app using phone/password combination.
+# NOTE: this requires sign_up_phone() and verify_otp() to work
+func sign_in_phone(phone : String, password : String = "") -> AuthTask:
+    if _auth != "": return _check_auth()
+    var payload : Dictionary = {"phone":phone, "password":password}
+    var auth_task : AuthTask = AuthTask.new(
+        AuthTask.Task.SIGNIN,
+        _config.supabaseUrl + _signin_endpoint, 
+        _header,
+        payload)
+    _process_task(auth_task)
+    return auth_task
+
+
+# Sign in using OTP - the user won't need to use a password but the token must be validated.
+# This method always requires to use OTP verification, unlike sign_in_phone()
+func sign_in_otp(phone : String) -> AuthTask:
+    if _auth != "": return _check_auth()
+    var payload : Dictionary = {"phone":phone}
+    var auth_task : AuthTask = AuthTask.new(
+        AuthTask.Task.SIGNINOTP,
+        _config.supabaseUrl + _signin_otp_endpoint, 
+        _header,
+        payload)
+    _process_task(auth_task)
+    return auth_task
+
+
+# Verify the OTP token sent to a user as an SMS
+func verify_otp(phone : String, token : String) -> AuthTask:
+    if _auth != "": return _check_auth()
+    var payload : Dictionary = {phone = phone, token = token, type = "sms"}
+    var auth_task : AuthTask = AuthTask.new(
+        AuthTask.Task.VERIFYOTP,
+        _config.supabaseUrl + _verify_otp_endpoint, 
+        _header,
+        payload)
+    _process_task(auth_task)
+    return auth_task
+
+
+
 # Sign in as an anonymous user
 func sign_in_anonymous() -> void:
+    if _auth != "": return
     _auth = _config.supabaseKey
     _bearer[0] = _bearer[0] % _auth
-    emit_signal("signed_in", null)
+    emit_signal("signed_in")
 
+
+# [     CURRENTLY UNSUPPORTED       ]
 # Sign in with a Provider
 # @provider = Providers.PROVIDER
 func sign_in_with_provider(provider : String, grab_from_browser : bool = true, port : int = 3000) -> void:
@@ -113,6 +186,7 @@ func send_magic_link(email : String)  -> AuthTask:
         payload)
     _process_task(auth_task)
     return auth_task
+
 
 # Get the JSON object for the logged in user.
 func user(user_access_token : String = _auth) -> AuthTask:
@@ -163,7 +237,7 @@ func invite_user_by_email(email : String) -> AuthTask:
 # Refresh the access_token of the authenticated client using the refresh_token
 # No need to call this manually except specific needs, since the process will be handled automatically
 func refresh_token(refresh_token : String = client.refresh_token, expires_in : float = client.expires_in) -> AuthTask:
-    yield(get_tree().create_timer(expires_in), "timeout")
+    yield(get_tree().create_timer(expires_in-10), "timeout")
     var payload : Dictionary = {refresh_token = refresh_token}
     var auth_task : AuthTask = AuthTask.new(
         AuthTask.Task.REFRESH,
@@ -185,6 +259,7 @@ func _get_link_response(delta : float) -> void:
     else:
         _get_link_response(delta)
 
+
 # Process a specific task
 func _process_task(task : AuthTask) -> void:
     var httprequest : HTTPRequest = HTTPRequest.new()
@@ -204,12 +279,18 @@ func _on_task_completed(task : AuthTask) -> void:
         match task._code:
             AuthTask.Task.SIGNUP:
                 emit_signal("signed_up", client)
+            AuthTask.Task.SIGNUPPHONEPASSWORD:
+                emit_signal("signed_up_phone", client)
             AuthTask.Task.SIGNIN:
                 emit_signal("signed_in", client)
+            AuthTask.Task.SIGNINOTP:
+                emit_signal("signed_in_otp", client)
             AuthTask.Task.UPDATE: 
                 emit_signal("user_updated", client)
             AuthTask.Task.REFRESH:
                 emit_signal("token_refreshed", client)
+            AuthTask.Task.VERIFYOTP:
+                emit_signal("otp_verified")
         refresh_token()
     elif task.data == null:
         match task._code:
@@ -220,7 +301,7 @@ func _on_task_completed(task : AuthTask) -> void:
             AuthTask.Task.INVITE:
                 emit_signal("user_invited")
             AuthTask.Task.LOGOUT:
-                emit_signal("logged_out")
+                emit_signal("signed_out")
                 client = null
                 _auth = ""
                 _bearer = ["Authorization: Bearer %s"]

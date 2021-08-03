@@ -6,14 +6,17 @@ signal completed(task)
 enum Task {
     NONE,
     SIGNUP,
+    SIGNUPPHONEPASSWORD,
     SIGNIN,
+    SIGNINOTP,
     MAGICLINK,
     LOGOUT,
     USER,
     UPDATE,
     RECOVER,
     REFRESH,
-    INVITE
+    INVITE,
+    VERIFYOTP
 }
 
 var _code : int
