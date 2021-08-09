@@ -8,6 +8,7 @@ enum Task {
     SIGNUP,
     SIGNUPPHONEPASSWORD,
     SIGNIN,
+    SIGNINANONYM,
     SIGNINOTP,
     MAGICLINK,
     LOGOUT,
