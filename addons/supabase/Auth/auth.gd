@@ -49,8 +49,6 @@ var _bearer : PoolStringArray = ["Authorization: Bearer %s"]
 var _auth : String = ""
 var _expires_in : float = 0
 
-var _pooled_tasks : Array = []
-
 var client : SupabaseUser
 
 func _init(conf : Dictionary, head : PoolStringArray) -> void:
@@ -148,11 +146,12 @@ func verify_otp(phone : String, token : String) -> AuthTask:
 
 
 # Sign in as an anonymous user
-func sign_in_anonymous() -> void:
-    if _auth != "": return
-    _auth = _config.supabaseKey
-    _bearer[0] = _bearer[0] % _auth
-    emit_signal("signed_in")
+func sign_in_anonymous() -> AuthTask:
+    if _auth != "": return _check_auth()
+    var auth_task : AuthTask = AuthTask.new(AuthTask.Task.SIGNINANONYM, "", [])
+    auth_task.user = SupabaseUser.new({user = {}, access_token = _config.supabaseKey})
+    _process_task(auth_task, true)
+    return auth_task
 
 
 # [     CURRENTLY UNSUPPORTED       ]
@@ -261,16 +260,19 @@ func _get_link_response(delta : float) -> void:
 
 
 # Process a specific task
-func _process_task(task : AuthTask) -> void:
-    var httprequest : HTTPRequest = HTTPRequest.new()
-    add_child(httprequest)
+func _process_task(task : AuthTask, _fake : bool = false) -> void:
     task.connect("completed", self, "_on_task_completed")
-    task.push_request(httprequest)
-    _pooled_tasks.append(task)
+    if _fake:
+        yield(get_tree().create_timer(0.5), "timeout")
+        task.complete(task.user, task.data, task.error)
+    else:
+        var httprequest : HTTPRequest = HTTPRequest.new()
+        add_child(httprequest)
+        task.push_request(httprequest)
 
 
 func _on_task_completed(task : AuthTask) -> void:
-    task._handler.queue_free()
+    if task._handler!=null: task._handler.queue_free()
     if task.user != null:
         client = task.user
         _auth = client.access_token
@@ -291,6 +293,8 @@ func _on_task_completed(task : AuthTask) -> void:
                 emit_signal("token_refreshed", client)
             AuthTask.Task.VERIFYOTP:
                 emit_signal("otp_verified")
+            AuthTask.Task.SIGNINANONYM:
+                emit_signal("signed_in_anonyous")
         refresh_token()
     elif task.data == null:
         match task._code:
@@ -308,7 +312,6 @@ func _on_task_completed(task : AuthTask) -> void:
                 _expires_in = 0
     elif task.error != null:
         emit_signal("error", task.error)
-    _pooled_tasks.erase(task)
 
 # A timer used to listen through TCP on the redirect uri of the request
 func _tcp_stream_timer() -> void:
