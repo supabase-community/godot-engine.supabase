@@ -24,7 +24,7 @@ func _init(conf : Dictionary, head : PoolStringArray) -> void:
 
 # Issue a query on your database
 func query(supabase_query : SupabaseQuery) -> DatabaseTask:
-    _bearer = Supabase.auth._bearer
+    _bearer = get_parent().auth._bearer
     var endpoint : String = _config.supabaseUrl + _rest_endpoint + supabase_query.build_query()
     var task : DatabaseTask = DatabaseTask.new()
     task._setup(
@@ -38,7 +38,7 @@ func query(supabase_query : SupabaseQuery) -> DatabaseTask:
 
 # Issue an rpc() call to a function
 func rpc(function_name : String, arguments : Dictionary = {}, supabase_query : SupabaseQuery = null) -> DatabaseTask:
-    _bearer = Supabase.auth._bearer
+    _bearer = get_parent().auth._bearer
     var endpoint : String = _config.supabaseUrl + _rest_endpoint + "rpc/{function}".format({function = function_name}) + (supabase_query.build_query() if supabase_query!=null else "")
     var task : DatabaseTask = DatabaseTask.new()
     task._setup(

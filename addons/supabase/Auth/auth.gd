@@ -168,7 +168,7 @@ func sign_out() -> AuthTask:
     var auth_task : AuthTask = AuthTask.new(
         AuthTask.Task.LOGOUT,
         _config.supabaseUrl + _logout_endpoint, 
-        _header)
+        _header + _bearer)
     _process_task(auth_task)
     return auth_task
 
@@ -273,45 +273,49 @@ func _process_task(task : AuthTask, _fake : bool = false) -> void:
 
 func _on_task_completed(task : AuthTask) -> void:
     if task._handler!=null: task._handler.queue_free()
-    if task.user != null:
-        client = task.user
-        _auth = client.access_token
-        _bearer[0] = _bearer[0] % _auth
-        _expires_in = client.expires_in
-        match task._code:
-            AuthTask.Task.SIGNUP:
-                emit_signal("signed_up", client)
-            AuthTask.Task.SIGNUPPHONEPASSWORD:
-                emit_signal("signed_up_phone", client)
-            AuthTask.Task.SIGNIN:
-                emit_signal("signed_in", client)
-            AuthTask.Task.SIGNINOTP:
-                emit_signal("signed_in_otp", client)
-            AuthTask.Task.UPDATE: 
-                emit_signal("user_updated", client)
-            AuthTask.Task.REFRESH:
-                emit_signal("token_refreshed", client)
-            AuthTask.Task.VERIFYOTP:
-                emit_signal("otp_verified")
-            AuthTask.Task.SIGNINANONYM:
-                emit_signal("signed_in_anonyous")
-        refresh_token()
-    elif task.data == null:
-        match task._code:
-            AuthTask.Task.MAGICLINK:
-                emit_signal("magic_link_sent")
-            AuthTask.Task.RECOVER:
-                emit_signal("reset_email_sent")
-            AuthTask.Task.INVITE:
-                emit_signal("user_invited")
-            AuthTask.Task.LOGOUT:
-                emit_signal("signed_out")
-                client = null
-                _auth = ""
-                _bearer = ["Authorization: Bearer %s"]
-                _expires_in = 0
-    elif task.error != null:
+    
+    if task.error != null:
         emit_signal("error", task.error)
+    else:
+        if task.user != null:
+            client = task.user
+            _auth = client.access_token
+            _bearer[0] = _bearer[0] % _auth
+            _expires_in = client.expires_in
+            match task._code:
+                AuthTask.Task.SIGNUP:
+                    emit_signal("signed_up", client)
+                AuthTask.Task.SIGNUPPHONEPASSWORD:
+                    emit_signal("signed_up_phone", client)
+                AuthTask.Task.SIGNIN:
+                    emit_signal("signed_in", client)
+                AuthTask.Task.SIGNINOTP:
+                    emit_signal("signed_in_otp", client)
+                AuthTask.Task.UPDATE: 
+                    emit_signal("user_updated", client)
+                AuthTask.Task.REFRESH:
+                    emit_signal("token_refreshed", client)
+                AuthTask.Task.VERIFYOTP:
+                    emit_signal("otp_verified")
+                AuthTask.Task.SIGNINANONYM:
+                    emit_signal("signed_in_anonyous")
+            refresh_token()
+        else: 
+           if task.data.empty() or task.data == null:
+                match task._code:
+                    AuthTask.Task.MAGICLINK:
+                        emit_signal("magic_link_sent")
+                    AuthTask.Task.RECOVER:
+                        emit_signal("reset_email_sent")
+                    AuthTask.Task.INVITE:
+                        emit_signal("user_invited")
+                    AuthTask.Task.LOGOUT:
+                        emit_signal("signed_out")
+                        client = null
+                        _auth = ""
+                        _bearer = ["Authorization: Bearer %s"]
+                        _expires_in = 0
+            
 
 # A timer used to listen through TCP on the redirect uri of the request
 func _tcp_stream_timer() -> void:
