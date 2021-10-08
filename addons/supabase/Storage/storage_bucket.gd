@@ -62,16 +62,15 @@ var _response_code : int
 var id : String
 
 
-func _init(id : String , config : Dictionary) -> void:
+func _init(id : String , config : Dictionary, bearer : PoolStringArray) -> void:
     _config = config
     self.id = id
-    _http_client
+    _bearer = bearer
     name = "Bucket_"+id
     set_process_internal(false)
 
 
 func list(prefix : String = "", limit : int = 100, offset : int = 0, sort_by : Dictionary = {column = "name", order = "asc"} ) -> StorageTask:
-    _bearer = Supabase.auth._bearer
     var endpoint : String = _config.supabaseUrl + _rest_endpoint + "list/" + id
     var task : StorageTask = StorageTask.new()
     var header : PoolStringArray = [_header[0] % "application/json"]
@@ -86,7 +85,6 @@ func list(prefix : String = "", limit : int = 100, offset : int = 0, sort_by : D
 
 func upload(object : String, file_path : String, upsert : bool = false) -> StorageTask:
     requesting_raw = true
-    _bearer = Supabase.auth._bearer
     var task : StorageTask = StorageTask.new()
     var endpoint : String = _config.supabaseUrl + _rest_endpoint + id + "/" + object
     var file : File = File.new()
@@ -114,7 +112,6 @@ func upload(object : String, file_path : String, upsert : bool = false) -> Stora
 
 func update(bucket_path : String, file_path : String) -> StorageTask:
     requesting_raw = true
-    _bearer = Supabase.auth._bearer
     var endpoint : String = _config.supabaseUrl + _rest_endpoint + id + "/" + bucket_path
     var file : File = File.new()
     file.open(file_path, File.READ)
@@ -136,7 +133,6 @@ func update(bucket_path : String, file_path : String) -> StorageTask:
 
 
 func move(source_path : String, destination_path : String) -> StorageTask:
-    _bearer = Supabase.auth._bearer
     var endpoint : String = _config.supabaseUrl + _rest_endpoint + "move"
     var task : StorageTask = StorageTask.new()
     var header : PoolStringArray = [_header[0] % "application/json"]
@@ -150,7 +146,6 @@ func move(source_path : String, destination_path : String) -> StorageTask:
 
 
 func create_signed_url(object : String, expires_in : int = 60000) -> StorageTask:
-    _bearer = Supabase.auth._bearer
     var endpoint : String = _config.supabaseUrl + _rest_endpoint + "sign/" + id + "/" + object
     var task : StorageTask = StorageTask.new()
     var header : PoolStringArray = [_header[0] % "application/json"]
@@ -166,7 +161,6 @@ func create_signed_url(object : String, expires_in : int = 60000) -> StorageTask
 
 func download(object : String, to_path : String = "", private : bool = false) -> StorageTask:
     if not private:
-        _bearer = Supabase.auth._bearer
         var endpoint : String = _config.supabaseUrl + _rest_endpoint + "public/" + id + "/" + object
         var task : StorageTask = StorageTask.new()
         var header : PoolStringArray = [_header[0] % "application/json"]
@@ -178,7 +172,6 @@ func download(object : String, to_path : String = "", private : bool = false) ->
         _process_task(task, {download_file = to_path})
         return task
     else:
-        _bearer = Supabase.auth._bearer
         var endpoint : String = _config.supabaseUrl + _rest_endpoint + "authenticated/" + id + "/" + object
         var task : StorageTask = StorageTask.new()
         var header : PoolStringArray = [_header[0] % "application/json"]
@@ -196,7 +189,6 @@ func get_public_url(object : String) -> String:
 
 
 func remove(objects : PoolStringArray) -> StorageTask:
-    _bearer = Supabase.auth._bearer
     var endpoint : String = _config.supabaseUrl + _rest_endpoint + id + ("/" + objects[0] if objects.size() == 1 else "")
     var task : StorageTask = StorageTask.new()
     var header : PoolStringArray = [_header[0] % "application/json"]

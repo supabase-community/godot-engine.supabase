@@ -23,7 +23,7 @@ func _init(config : Dictionary) -> void:
     name = "Storage"
 
 func list_buckets() -> StorageTask:
-    _bearer = Supabase.auth._bearer
+    _bearer = get_parent().auth._bearer
     var endpoint : String = _config.supabaseUrl + _rest_endpoint + "bucket"
     var task : StorageTask = StorageTask.new()
     task._setup(
@@ -35,7 +35,7 @@ func list_buckets() -> StorageTask:
 
 
 func get_bucket(id : String) -> StorageTask:
-    _bearer = Supabase.auth._bearer
+    _bearer = get_parent().auth._bearer
     var endpoint : String = _config.supabaseUrl + _rest_endpoint + "bucket/" + id
     var task : StorageTask = StorageTask.new()
     task._setup(
@@ -47,7 +47,7 @@ func get_bucket(id : String) -> StorageTask:
 
 
 func create_bucket(_name : String, id : String, public : bool = false) -> StorageTask:
-    _bearer = Supabase.auth._bearer
+    _bearer = get_parent().auth._bearer
     var endpoint : String = _config.supabaseUrl + _rest_endpoint + "bucket"
     var task : StorageTask = StorageTask.new()
     task._setup(
@@ -60,7 +60,7 @@ func create_bucket(_name : String, id : String, public : bool = false) -> Storag
 
 
 func update_bucket(id : String, public : bool) -> StorageTask:
-    _bearer = Supabase.auth._bearer
+    _bearer = get_parent().auth._bearer
     var endpoint : String = _config.supabaseUrl + _rest_endpoint + "bucket/" + id
     var task : StorageTask = StorageTask.new()
     task._setup(
@@ -73,7 +73,7 @@ func update_bucket(id : String, public : bool) -> StorageTask:
 
 
 func empty_bucket(id : String) -> StorageTask:
-    _bearer = Supabase.auth._bearer
+    _bearer = get_parent().auth._bearer
     var endpoint : String = _config.supabaseUrl + _rest_endpoint + "bucket/" + id + "/empty"
     var task : StorageTask = StorageTask.new()
     task._setup(
@@ -85,7 +85,7 @@ func empty_bucket(id : String) -> StorageTask:
 
 
 func delete_bucket(id : String) -> StorageTask:
-    _bearer = Supabase.auth._bearer
+    _bearer = get_parent().auth._bearer
     var endpoint : String = _config.supabaseUrl + _rest_endpoint + "bucket/" + id 
     var task : StorageTask = StorageTask.new()
     task._setup(
@@ -100,7 +100,7 @@ func from(id : String) -> StorageBucket:
     for bucket in get_children():
         if bucket.id == id:
             return bucket
-    var storage_bucket : StorageBucket = StorageBucket.new(id, _config)
+    var storage_bucket : StorageBucket = StorageBucket.new(id, _config, get_parent().auth._bearer)
     add_child(storage_bucket)
     return storage_bucket
 

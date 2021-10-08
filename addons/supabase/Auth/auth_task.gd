@@ -54,6 +54,8 @@ func push_request(httprequest : HTTPRequest) -> void:
     _handler = httprequest
     _handler.connect("request_completed", self, "_on_task_completed")
     _handler.request(_endpoint, _headers, true, _method, to_json(_payload))
+    yield(_handler, "request_completed")
+
 
 func _on_task_completed(result : int, response_code : int, headers : PoolStringArray, body : PoolByteArray) -> void:
     var result_body : Dictionary = JSON.parse(body.get_string_from_utf8()).result if body.get_string_from_utf8() else {}
