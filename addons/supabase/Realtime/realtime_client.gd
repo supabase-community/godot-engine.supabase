@@ -109,22 +109,22 @@ func _on_data() -> void:
 		PhxEvents.REPLY:
 			if _check_response(data) == 0:
 				pass
-				print_debug("Received reply = "+to_json(data))
+				get_parent().get_parent()._print_debug("Received reply = "+to_json(data))
 		PhxEvents.JOIN:
 			if _check_response(data) == 0:
 				pass
-				print_debug("Joined topic '%s'" % data.topic)
+				get_parent().get_parent()._print_debug("Joined topic '%s'" % data.topic)
 		PhxEvents.LEAVE:
 			if _check_response(data) == 0:
 				pass
-				print_debug("Left topic '%s'" % data.topic)
+				get_parent().get_parent()._print_debug("Left topic '%s'" % data.topic)
 		PhxEvents.CLOSE:
 			pass
-			print_debug("Channel closed.")
+			get_parent().get_parent()._print_debug("Channel closed.")
 		PhxEvents.ERROR:
 			emit_signal("error", data.payload)
 		SupabaseEvents.DELETE, SupabaseEvents.INSERT, SupabaseEvents.UPDATE:
-			print_debug("Received %s event..." % data.event)
+			get_parent().get_parent()._print_debug("Received %s event..." % data.event)
 			var channel : RealtimeChannel = get_channel(data.topic)
 			if channel != null:
 				channel._publish(data)

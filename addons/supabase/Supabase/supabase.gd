@@ -7,6 +7,8 @@ var database : SupabaseDatabase
 var realtime : SupabaseRealtime
 var storage : SupabaseStorage
 
+var debug: bool = false
+
 var config : Dictionary = {
 	"supabaseUrl": "",
 	"supabaseKey": ""
@@ -48,3 +50,9 @@ func load_nodes() -> void:
 	add_child(database)
 	add_child(realtime)
 	add_child(storage)
+
+func debug(debugging: bool) -> void:
+	debug = debugging
+
+func _print_debug(msg: String) -> void:
+	if debug: print_debug(msg)
