@@ -280,6 +280,7 @@ func _on_task_completed(task : AuthTask) -> void:
 		if task.user != null:
 			client = task.user
 			_auth = client.access_token
+			_bearer = ["Authorization: Bearer %s"]
 			_bearer[0] = _bearer[0] % _auth
 			_expires_in = client.expires_in
 			match task._code:
