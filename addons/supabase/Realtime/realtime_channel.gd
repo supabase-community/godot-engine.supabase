@@ -36,7 +36,7 @@ func subscribe() -> RealtimeChannel:
 	_client.send_message({
 	  "topic": topic,
 	  "event": _client.PhxEvents.JOIN,
-	  "payload": {},
+	  "payload": {"user_token": Supabase.auth.client.access_token},
 	  "ref": null
 	})
 	subscribed = true

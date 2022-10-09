@@ -11,6 +11,7 @@ class PhxEvents:
 	const LEAVE := "phx_leave"
 	const ERROR := "phx_error"
 	const CLOSE := "phx_close"
+	const ACCESS_TOKEN := "access_token"
 
 class SupabaseEvents:
 	const DELETE:= "DELETE"
@@ -157,6 +158,13 @@ func _send_heartbeat() -> void:
 		"payload": {},
 		"ref": null
 	})
+	for topic in channels:
+		send_message({
+			"topic": topic.topic,
+			"event": PhxEvents.ACCESS_TOKEN,
+			"payload": {"access_token": Supabase.auth.client.access_token},
+			"ref": null
+		})
 	
 func _on_timeout() -> void:
 	if _ws_client.get_peer(1).is_connected_to_host():
