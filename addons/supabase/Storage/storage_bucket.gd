@@ -66,7 +66,7 @@ func _init(id : String , config : Dictionary, bearer : PoolStringArray) -> void:
 	_config = config
 	self.id = id
 	_bearer = bearer
-	name = "Bucket_"+id
+	name = "Bucket_" + id
 	set_process_internal(false)
 
 
@@ -90,7 +90,7 @@ func upload(object : String, file_path : String, upsert : bool = false) -> Stora
 	var file : File = File.new()
 	var error : int = file.open(file_path, File.READ)
 	if error != OK: 
-		printerr("could not open %s "%file_path)
+		printerr("could not open %s " % file_path)
 		task.complete({})
 		return task
 	var header : PoolStringArray = [_header[0] % MIME_TYPES.get(file_path.get_extension(), "application/octet-stream")]
@@ -278,7 +278,7 @@ func _on_task_completed(task : StorageTask) -> void:
 	if task._handler : task._handler.queue_free()
 	if requesting_raw:
 		_clear_raw_request()
-	if task.data!=null and not task.data.empty():    
+	if task.data != null and not task.data.empty():    
 		match task._code:
 			task.METHODS.LIST_OBJECTS: emit_signal("listed_objects", task.data)
 			task.METHODS.UPLOAD_OBJECT: emit_signal("uploaded_object", task.data)

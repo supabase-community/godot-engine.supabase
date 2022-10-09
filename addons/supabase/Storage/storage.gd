@@ -116,7 +116,7 @@ func _process_task(task : StorageTask) -> void:
 # .............. HTTPRequest completed
 func _on_task_completed(task : StorageTask) -> void:
 	if task._handler : task._handler.queue_free()
-	if task.data!=null and not task.data.empty():    
+	if task.data != null and not task.data.empty():    
 		match task._code:
 			task.METHODS.LIST_BUCKETS: emit_signal("listed_buckets", task.data)
 			task.METHODS.GET_BUCKET: emit_signal("got_bucket", task.data)

@@ -75,7 +75,7 @@ func build_query() -> String:
 	if raw_query == "" and query == raw_query:
 		for key in query_struct:
 			if query_struct[key].empty(): continue
-			if query.length() > 0 : if not query[query.length()-1] in ["/","?"]: query+="&"
+			if query.length() > 0 : if not query[query.length() - 1] in ["/","?"]: query += "&"
 			match key:
 				"table":
 					query += query_struct[key]
@@ -85,12 +85,12 @@ func build_query() -> String:
 				"eq", "neq", "lt", "gt", "lte", "gte", "like", "ilike", "Is", "in", "fts", "plfts", "phfts", "wfts":
 					query += PoolStringArray(query_struct[key]).join("&")
 				"Or":
-					query += "or=(%s)"%[query_struct[key].join(",")]
+					query += "or=(%s)" % [query_struct[key].join(",")]
 	return query
 
 
 func from(table_name : String) -> SupabaseQuery:
-	query_struct.table = table_name+"?"
+	query_struct.table = table_name + "?"
 	return self
 
 # Insert new Row
@@ -120,7 +120,7 @@ func delete() -> SupabaseQuery:
 ## [MODIFIERS] -----------------------------------------------------------------
 
 func range(from : int, to : int) -> SupabaseQuery:
-	header = PoolStringArray(["Range: "+str(from)+"-"+str(to)])
+	header = PoolStringArray(["Range: " + str(from) + "-" + str(to)])
 	return self
 
 func order(column : String, direction : int = Directions.Ascending, nullsorder : int = Nullsorder.First) -> SupabaseQuery:
@@ -144,13 +144,13 @@ func filter(column : String, filter : int, value : String, _props : Dictionary =
 	if _props.has("config"):
 		struct_filter+= "({config})".format(_props)
 	if _props.has("negate"):
-		struct_filter = ("not."+struct_filter) if _props.get("negate") else struct_filter
+		struct_filter = ("not." + struct_filter) if _props.get("negate") else struct_filter
 	# Apply custom logic or continue with default logic
 	match filter_str:
 		"Or":
 			if _props.has("queries"):
 				for query in _props.get("queries"):
-					array.append(query.build_query().replace("=",".") if (not query is String) else query)
+					array.append(query.build_query().replace("=", ".") if (not query is String) else query)
 		_:
 			array.append("%s=%s.%s" % [column, struct_filter.to_lower(), value])
 	query_struct[filter_str] = array
@@ -214,7 +214,7 @@ func lte(column : String, value : String) -> SupabaseQuery:
 
 # Finds all rows whose value in the stated column matches the supplied pattern (case sensitive).
 func like(column : String, value : String) -> SupabaseQuery:
-	filter(column, Filters.LIKE, "*%s*"%value)
+	filter(column, Filters.LIKE, "*%s*" % value)
 	return self
 
 # Finds all rows whose value in the stated column matches the supplied pattern (case insensitive).
@@ -229,7 +229,7 @@ func Is(column : String, value, negate : bool = false) -> SupabaseQuery:
 
 # Finds all rows whose value on the stated column is found on the specified values.
 func In(column : String, array : PoolStringArray) -> SupabaseQuery:
-	filter(column, Filters.IN, "("+array.join(",")+")")
+	filter(column, Filters.IN, "(" + array.join(",") + ")")
 	return self
 
 func Or(queries : Array) -> SupabaseQuery:

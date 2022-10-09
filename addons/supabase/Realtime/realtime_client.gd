@@ -28,7 +28,7 @@ var _heartbeat_timer : Timer = Timer.new()
 
 func _init(url : String, apikey : String, timeout : float) -> void:
 	set_process_internal(false)
-	_db_url = url.replace("http","ws")+"/realtime/v1/websocket"
+	_db_url = url.replace("http", "ws") + "/realtime/v1/websocket"
 	_apikey = apikey
 	_heartbeat_timer.set_wait_time(timeout)
 	_heartbeat_timer.name = "PhxHeartbeat"
@@ -78,11 +78,11 @@ func channel(schema : String, table : String = "", col_value : String = "") -> R
 	return channel
 
 func _build_topic(schema : String, table : String = "", col_value : String = "") -> String:
-	var topic : String = "realtime:"+schema
+	var topic : String = "realtime:" + schema
 	if table != "":
-		topic+=":"+table
-		if col_value!= "":
-			topic+=":"+col_value
+		topic += ":" + table
+		if col_value != "":
+			topic += ":" + col_value
 	return topic
 		
 func _add_channel(channel : RealtimeChannel) -> void:
@@ -109,7 +109,7 @@ func _on_data() -> void:
 		PhxEvents.REPLY:
 			if _check_response(data) == 0:
 				pass
-				get_parent().get_parent()._print_debug("Received reply = "+to_json(data))
+				get_parent().get_parent()._print_debug("Received reply = " + to_json(data))
 		PhxEvents.JOIN:
 			if _check_response(data) == 0:
 				pass

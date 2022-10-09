@@ -39,7 +39,7 @@ func query(supabase_query : SupabaseQuery) -> DatabaseTask:
 # Issue an rpc() call to a function
 func rpc(function_name : String, arguments : Dictionary = {}, supabase_query : SupabaseQuery = null) -> DatabaseTask:
 	_bearer = get_parent().auth._bearer
-	var endpoint : String = _config.supabaseUrl + _rest_endpoint + "rpc/{function}".format({function = function_name}) + (supabase_query.build_query() if supabase_query!=null else "")
+	var endpoint : String = _config.supabaseUrl + _rest_endpoint + "rpc/{function}".format({function = function_name}) + (supabase_query.build_query() if supabase_query != null else "")
 	var task : DatabaseTask = DatabaseTask.new()
 	task._setup(
 		supabase_query,
@@ -57,10 +57,10 @@ func _process_task(task : DatabaseTask) -> void:
 	task.push_request(httprequest)
 	_pooled_tasks.append(task)
 
-# .............. HTTPRequest completed
+# Handle HTTPRequest completed
 func _on_task_completed(task : DatabaseTask) -> void:
 	if task._handler != null: task._handler.queue_free()
-	if task.data!=null and not task.data.empty():    
+	if task.data != null and not task.data.empty():    
 		match task._code:
 			SupabaseQuery.REQUESTS.SELECT: emit_signal("selected", task.data)
 			SupabaseQuery.REQUESTS.INSERT: emit_signal("inserted", task.data)
