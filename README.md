@@ -1,5 +1,7 @@
 <p align="center"><img src="addons/supabase/icon.svg" width="80px"/></p>
 
+[3.x](https://github.com/supabase-community/godot-engine.supabase/tree/main) - 👉 **[4.x](https://github.com/supabase-community/godot-engine.supabase/tree/4.x)**
+
 # Godot Engine - Supabase
 A lightweight addon which integrates Supabase APIs for Godot Engine out of the box.  
 
@@ -22,8 +24,25 @@ Even though it is still not complete, Classes and APIs references are always lis
 ### code snippet
 Multiple approaches!
 
-Javascript library style
-![code-snapshot1](imgs/snapshot1.png)
+*Asynchronous*
+```gdscript
+func _ready():
+	Supabase.auth.signed_in.connect(_on_signed_in)
+	Supabase.auth.sign_in(
+		"user@supabase.email",
+		"userpwd"
+	)
 
-GDscript style
-![code-snapshot2](imgs/snapshot2.png)
+func _on_signed_in(user: SupabaseUser) -> void:
+	print(user)
+```
+
+*Synchronous*
+```gdscript
+func _ready():
+	var auth_task: AuthTask = await Supabase.auth.sign_in(
+		"user@supabase.email",
+		"userpwd"
+	)
+	print(auth_task.user)
+```
