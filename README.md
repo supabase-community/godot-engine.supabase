@@ -1,6 +1,7 @@
-<p align="center"><img src="addons/supabase/icon.svg" width="80px"/></p>
-
+<p align="center">
+<img src="addons/supabase/icon.svg" width="80px"/>
 [3.x](https://github.com/supabase-community/godot-engine.supabase/tree/main) - 👉 **[4.x](https://github.com/supabase-community/godot-engine.supabase/tree/4.x)**
+</p>
 
 # Godot Engine - Supabase
 A lightweight addon which integrates Supabase APIs for Godot Engine out of the box.  
