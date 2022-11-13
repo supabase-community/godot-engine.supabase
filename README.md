@@ -1,9 +1,8 @@
-<p align="center">
-<img src="addons/supabase/icon.svg" width="80px"/>
-[3.x](https://github.com/supabase-community/godot-engine.supabase/tree/main) - 👉 **[4.x](https://github.com/supabase-community/godot-engine.supabase/tree/4.x)**
-</p>
+<p align="center"><img src="addons/supabase/icon.svg" width="80px"/></p>
 
-# Godot Engine - Supabase
+👉 [3.x](https://github.com/supabase-community/godot-engine.supabase/tree/main)
+
+# Godot Engine - Supabase (4.x)
 A lightweight addon which integrates Supabase APIs for Godot Engine out of the box.  
 
 - [x] Authentication (/auth)
