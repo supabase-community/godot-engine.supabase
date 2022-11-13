@@ -12,8 +12,7 @@ signal error(error)
 const _rest_endpoint : String = "/storage/v1/"
 
 var _config : Dictionary
-var _header : PoolStringArray = ["Content-type: application/json"]
-var _bearer : PoolStringArray = ["Authorization: Bearer %s"]
+var _header : PackedStringArray = ["Content-type: application/json"]
 
 var _pooled_tasks : Array = []
 
@@ -23,76 +22,70 @@ func _init(config : Dictionary) -> void:
 	name = "Storage"
 
 func list_buckets() -> StorageTask:
-	_bearer = get_parent().auth._bearer
 	var endpoint : String = _config.supabaseUrl + _rest_endpoint + "bucket"
 	var task : StorageTask = StorageTask.new()
 	task._setup(
 		task.METHODS.LIST_BUCKETS, 
 		endpoint, 
-		_header + _bearer)
-	_process_task(task)
+		_header + get_parent()._auth.__get_session_header())
+	await _process_task(task)
 	return task    
 
 
 func get_bucket(id : String) -> StorageTask:
-	_bearer = get_parent().auth._bearer
 	var endpoint : String = _config.supabaseUrl + _rest_endpoint + "bucket/" + id
 	var task : StorageTask = StorageTask.new()
 	task._setup(
 		task.METHODS.GET_BUCKET, 
 		endpoint, 
-		_header + _bearer)
-	_process_task(task)
+		_header + get_parent()._auth.__get_session_header())
+	await _process_task(task)
 	return task    
 
 
 func create_bucket(_name : String, id : String, public : bool = false) -> StorageTask:
-	_bearer = get_parent().auth._bearer
 	var endpoint : String = _config.supabaseUrl + _rest_endpoint + "bucket"
 	var task : StorageTask = StorageTask.new()
 	task._setup(
 		task.METHODS.CREATE_BUCKET, 
 		endpoint, 
-		_header + _bearer,
-		to_json({"name" : _name, id = id, public = public}))
-	_process_task(task)
+		_header + get_parent()._auth.__get_session_header(),
+		JSON.stringify({name = _name, id = id, public = public}))
+	await _process_task(task)
 	return task    
 
 
 func update_bucket(id : String, public : bool) -> StorageTask:
-	_bearer = get_parent().auth._bearer
 	var endpoint : String = _config.supabaseUrl + _rest_endpoint + "bucket/" + id
 	var task : StorageTask = StorageTask.new()
 	task._setup(
 		task.METHODS.UPDATE_BUCKET, 
 		endpoint, 
-		_header + _bearer,
-		to_json({public = public}))
-	_process_task(task)
+		_header + get_parent()._auth.__get_session_header(),
+		JSON.stringify({public = public}))
+	await _process_task(task)
 	return task        
 
 
 func empty_bucket(id : String) -> StorageTask:
-	_bearer = get_parent().auth._bearer
 	var endpoint : String = _config.supabaseUrl + _rest_endpoint + "bucket/" + id + "/empty"
 	var task : StorageTask = StorageTask.new()
 	task._setup(
 		task.METHODS.EMPTY_BUCKET, 
 		endpoint, 
-		_bearer)
-	_process_task(task)
+		get_parent()._auth.__get_session_header())
+	await _process_task(task)
 	return task        
 
 
 func delete_bucket(id : String) -> StorageTask:
-	_bearer = get_parent().auth._bearer
 	var endpoint : String = _config.supabaseUrl + _rest_endpoint + "bucket/" + id 
 	var task : StorageTask = StorageTask.new()
 	task._setup(
 		task.METHODS.DELETE_BUCKET, 
 		endpoint, 
-		_bearer)
-	_process_task(task)
+		get_parent()._auth.__get_session_header())
+	await _process_task(task)
 	return task        
 
 
@@ -109,9 +102,9 @@ func from(id : String) -> StorageBucket:
 func _process_task(task : StorageTask) -> void:
 	var httprequest : HTTPRequest = HTTPRequest.new()
 	add_child(httprequest)
-	task.connect("completed", self, "_on_task_completed")
-	task.push_request(httprequest)
 	_pooled_tasks.append(task)
+	task.completed.connect(_on_task_completed)
+	await task.push_request(httprequest)
 
 # .............. HTTPRequest completed
 func _on_task_completed(task : StorageTask) -> void:

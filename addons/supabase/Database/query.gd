@@ -1,26 +1,26 @@
-extends Reference
+extends RefCounted
 class_name SupabaseQuery
 
 var query_struct : Dictionary = {
 	table = "",
-	select = PoolStringArray([]),
-	order = PoolStringArray([]),
-	Or = PoolStringArray([]),
-	eq = PoolStringArray([]),
-	neq = PoolStringArray([]),
-	like = PoolStringArray([]),
-	ilike = PoolStringArray([]),
-	Is = PoolStringArray([]),
-	in = PoolStringArray([]),
-	fts = PoolStringArray([]),
-	plfts = PoolStringArray([]),
-	phfts = PoolStringArray([]),
-	wfts = PoolStringArray([])
+	select = PackedStringArray([]),
+	order = PackedStringArray([]),
+	Or = PackedStringArray([]),
+	eq = PackedStringArray([]),
+	neq = PackedStringArray([]),
+	like = PackedStringArray([]),
+	ilike = PackedStringArray([]),
+	Is = PackedStringArray([]),
+	In = PackedStringArray([]),
+	fts = PackedStringArray([]),
+	plfts = PackedStringArray([]),
+	phfts = PackedStringArray([]),
+	wfts = PackedStringArray([])
    }
 
 var query : String = ""
 var raw_query : String = ""
-var header : PoolStringArray = []
+var header : PackedStringArray = []
 var request : int
 var body : String = ""
 
@@ -46,7 +46,7 @@ enum Nullsorder {
 enum Filters {
 	EQUAL,
 	NOT_EQUAL,
-	GREATER_THAN
+	GREATER_THAN,
 	LESS_THAN,
 	GREATER_THAN_OR_EQUAL,
 	LESS_THAN_OR_EQUAL,
@@ -56,36 +56,36 @@ enum Filters {
 	IN,
 	FTS,
 	PLFTS,
-	PHFLTS,
+	PHFTS,
 	WFTS,
 	OR,
 	ORDER
    }
 
-func _init(_raw_query : String = "", _raw_type : int = -1, _raw_header : PoolStringArray = [], _raw_body : String = ""):
+func _init(_raw_query : String = "", _raw_type : int = -1, _raw_header : PackedStringArray = PackedStringArray([]), _raw_body : String = ""):
 	if _raw_query != "":
 		raw_query = _raw_query
 		query = _raw_query
 		request = _raw_type
-		header = _raw_header as PoolStringArray
+		header = _raw_header as PackedStringArray
 		body = _raw_body
 
 # Build the query from the scrut
 func build_query() -> String:
 	if raw_query == "" and query == raw_query:
 		for key in query_struct:
-			if query_struct[key].empty(): continue
+			if query_struct[key].is_empty(): continue
 			if query.length() > 0 : if not query[query.length()-1] in ["/","?"]: query+="&"
 			match key:
 				"table":
 					query += query_struct[key]
 				"select", "order":
 					if query_struct[key].empty(): continue
-					query += (key + "=" + PoolStringArray(query_struct[key]).join(","))
+					query += (key + "=" + ",".join(PackedStringArray(query_struct[key])))
 				"eq", "neq", "lt", "gt", "lte", "gte", "like", "ilike", "Is", "in", "fts", "plfts", "phfts", "wfts":
-					query += PoolStringArray(query_struct[key]).join("&")
+					query += "&".join(PackedStringArray(query_struct[key]))
 				"Or":
-					query += "or=(%s)"%[query_struct[key].join(",")]
+					query += "or=(%s)"%[",".join(query_struct[key])]
 	return query
 
 
@@ -96,12 +96,12 @@ func from(table_name : String) -> SupabaseQuery:
 # Insert new Row
 func insert(fields : Array, upsert : bool = false) -> SupabaseQuery:
 	request = REQUESTS.INSERT
-	body = to_json(fields)
-	if upsert : header += PoolStringArray(["Prefer: resolution=merge-duplicates"])
+	body = JSON.stringify(fields)
+	if upsert : header += PackedStringArray(["Prefer: resolution=merge-duplicates"])
 	return self
 
 # Select Rows
-func select(columns : PoolStringArray = PoolStringArray(["*"])) -> SupabaseQuery:
+func select(columns : PackedStringArray = PackedStringArray(["*"])) -> SupabaseQuery:
 	request = REQUESTS.SELECT
 	query_struct.select += columns
 	return self
@@ -109,7 +109,7 @@ func select(columns : PoolStringArray = PoolStringArray(["*"])) -> SupabaseQuery
 # Update Rows
 func update(fields : Dictionary) -> SupabaseQuery:
 	request = REQUESTS.UPDATE
-	body = to_json(fields)
+	body = JSON.stringify(fields)
 	return self
 
 # Delete Rows
@@ -120,7 +120,7 @@ func delete() -> SupabaseQuery:
 ## [MODIFIERS] -----------------------------------------------------------------
 
 func range(from : int, to : int) -> SupabaseQuery:
-	header = PoolStringArray(["Range: "+str(from)+"-"+str(to)])
+	header = PackedStringArray(["Range: "+str(from)+"-"+str(to)])
 	return self
 
 func order(column : String, direction : int = Directions.Ascending, nullsorder : int = Nullsorder.First) -> SupabaseQuery:
@@ -132,14 +132,14 @@ func order(column : String, direction : int = Directions.Ascending, nullsorder :
 	match nullsorder:
 		Nullsorder.First: nullsorder_str = "nullsfirst"
 		Nullsorder.Last: nullsorder_str = "nullslast"
-	query_struct.order += PoolStringArray([("%s.%s.%s" % [column, direction_str, nullsorder_str])])
+	query_struct.order += PackedStringArray([("%s.%s.%s" % [column, direction_str, nullsorder_str])])
 	return self
 
 ## [FILTERS] -------------------------------------------------------------------- 
 
 func filter(column : String, filter : int, value : String, _props : Dictionary = {}) -> SupabaseQuery:
 	var filter_str : String = match_filter(filter)
-	var array : PoolStringArray = query_struct[filter_str] as PoolStringArray
+	var array : PackedStringArray = query_struct[filter_str] as PackedStringArray
 	var struct_filter : String = filter_str
 	if _props.has("config"):
 		struct_filter+= "({config})".format(_props)
@@ -228,8 +228,8 @@ func Is(column : String, value, negate : bool = false) -> SupabaseQuery:
 	return self
 
 # Finds all rows whose value on the stated column is found on the specified values.
-func In(column : String, array : PoolStringArray) -> SupabaseQuery:
-	filter(column, Filters.IN, "("+array.join(",")+")")
+func In(column : String, array : PackedStringArray) -> SupabaseQuery:
+	filter(column, Filters.IN, "("+",".join(array)+")")
 	return self
 
 func Or(queries : Array) -> SupabaseQuery:
@@ -255,22 +255,22 @@ func clean() -> void:
 	request = 0
 	
 	query_struct.table = ""
-	query_struct.select = PoolStringArray([])
-	query_struct.order = PoolStringArray([])
-	query_struct.eq = PoolStringArray([])
-	query_struct.neq = PoolStringArray([])
-	query_struct.gt = PoolStringArray([])
-	query_struct.lt = PoolStringArray([])
-	query_struct.gte = PoolStringArray([])
-	query_struct.lte = PoolStringArray([])
-	query_struct.like = PoolStringArray([])
-	query_struct.ilike = PoolStringArray([])
-	query_struct.IS = PoolStringArray([])
-	query_struct.in = PoolStringArray([])
-	query_struct.fts = PoolStringArray([])
-	query_struct.plfts = PoolStringArray([])
-	query_struct.phfts = PoolStringArray([])
-	query_struct.wfts = PoolStringArray([])
+	query_struct.select = PackedStringArray([])
+	query_struct.order = PackedStringArray([])
+	query_struct.eq = PackedStringArray([])
+	query_struct.neq = PackedStringArray([])
+	query_struct.gt = PackedStringArray([])
+	query_struct.lt = PackedStringArray([])
+	query_struct.gte = PackedStringArray([])
+	query_struct.lte = PackedStringArray([])
+	query_struct.like = PackedStringArray([])
+	query_struct.ilike = PackedStringArray([])
+	query_struct.IS = PackedStringArray([])
+	query_struct.In = PackedStringArray([])
+	query_struct.fts = PackedStringArray([])
+	query_struct.plfts = PackedStringArray([])
+	query_struct.phfts = PackedStringArray([])
+	query_struct.wfts = PackedStringArray([])
 
 
 func _to_string() -> String:

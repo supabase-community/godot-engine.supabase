@@ -23,7 +23,7 @@ var channels : Array = []
 var _db_url : String
 var _apikey : String
 
-var _ws_client = WebSocketClient.new()
+var _ws_client = WebSocketPeer.new()
 var _heartbeat_timer : Timer = Timer.new()
 
 func _init(url : String, apikey : String, timeout : float) -> void:
@@ -38,18 +38,18 @@ func _ready() -> void:
 	add_child(_heartbeat_timer)
 
 func _connect_signals() -> void:
-	_ws_client.connect("connection_closed", self, "_closed")
-	_ws_client.connect("connection_error", self, "_error")
-	_ws_client.connect("connection_established", self, "_connected")
-	_ws_client.connect("data_received", self, "_on_data")
-	_heartbeat_timer.connect("timeout", self, "_on_timeout")
+	_ws_client.connection_closed.connect(_closed)
+	_ws_client.connection_error.connect(_error)
+	_ws_client.connection_established.connect(_connected)
+	_ws_client.data_received.connect(_on_data)
+	_heartbeat_timer.timeout.connect(_on_timeout)
 
 func _disconnect_signals() -> void:
-	_ws_client.disconnect("connection_closed", self, "_closed")
-	_ws_client.disconnect("connection_error", self, "_error")
-	_ws_client.disconnect("connection_established", self, "_connected")
-	_ws_client.disconnect("data_received", self, "_on_data")
-	_heartbeat_timer.disconnect("timeout", self, "_on_timeout")
+	_ws_client.disconnection_closed.connect(_closed)
+	_ws_client.disconnection_error.connect(_error)
+	_ws_client.disconnection_established.connect(_connected)
+	_ws_client.disdata_received.connect(_on_data)
+	_heartbeat_timer.timeout.connect(_on_timeout)
 
 func connect_client() -> int:
 	set_process_internal(true)
@@ -109,7 +109,7 @@ func _on_data() -> void:
 		PhxEvents.REPLY:
 			if _check_response(data) == 0:
 				pass
-				get_parent().get_parent()._print_debug("Received reply = "+to_json(data))
+				get_parent().get_parent()._print_debug("Received reply = %s" % JSON.stringify(data))
 		PhxEvents.JOIN:
 			if _check_response(data) == 0:
 				pass
@@ -139,23 +139,23 @@ func _check_response(message : Dictionary):
 	if message.payload.status == "ok":
 		return 0
 
-func get_message(pb : PoolByteArray) -> Dictionary:
-	return parse_json(pb.get_string_from_utf8())
+func get_message(pb : PackedByteArray) -> Dictionary:
+	return JSON.parse_string(pb.get_string_from_utf8())
 		
 func send_message(json_message : Dictionary) -> void:
 	if not _ws_client.get_peer(1).is_connected_to_host():
-		yield(self, "connected")
-		_ws_client.get_peer(1).put_packet(to_json(json_message).to_utf8())
+		await connected
+		_ws_client.get_peer(1).put_packet(JSON.stringify(json_message).to_utf8_buffer())
 	else:
-		_ws_client.get_peer(1).put_packet(to_json(json_message).to_utf8())
+		_ws_client.get_peer(1).put_packet(JSON.stringify(json_message).to_utf8_buffer())
 		
 		
 func _send_heartbeat() -> void:
 	send_message({
-		"topic": "phoenix",
-		"event": "heartbeat",
-		"payload": {},
-		"ref": null
+		topic = "phoenix",
+		event = "heartbeat",
+		payload = {},
+		ref = null
 	})
 	
 func _on_timeout() -> void:
