@@ -24,7 +24,7 @@ Even though it is still not complete, Classes and APIs references are always lis
 ### code snippet
 Multiple approaches!
 
-*Asynchronous*
+*Asynchronous (signals)*
 ```gdscript
 func _ready():
 	Supabase.auth.signed_in.connect(_on_signed_in)
@@ -37,7 +37,7 @@ func _on_signed_in(user: SupabaseUser) -> void:
 	print(user)
 ```
 
-*Synchronous*
+*Synchronous (await)*
 ```gdscript
 func _ready():
 	var auth_task: AuthTask = await Supabase.auth.sign_in(
