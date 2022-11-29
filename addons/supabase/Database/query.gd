@@ -1,3 +1,4 @@
+@tool
 extends RefCounted
 class_name SupabaseQuery
 
@@ -80,7 +81,7 @@ func build_query() -> String:
 				"table":
 					query += query_struct[key]
 				"select", "order":
-					if query_struct[key].empty(): continue
+					if query_struct[key].is_empty(): continue
 					query += (key + "=" + ",".join(PackedStringArray(query_struct[key])))
 				"eq", "neq", "lt", "gt", "lte", "gte", "like", "ilike", "Is", "in", "fts", "plfts", "phfts", "wfts":
 					query += "&".join(PackedStringArray(query_struct[key]))

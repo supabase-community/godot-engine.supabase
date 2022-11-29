@@ -1,3 +1,4 @@
+@tool
 extends Node
 
 const ENVIRONMENT_VARIABLES : String = "supabase/config"

@@ -1,3 +1,4 @@
+@tool
 extends BaseError
 class_name SupabaseAuthError
 

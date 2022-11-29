@@ -1,3 +1,4 @@
+@tool
 extends BaseTask
 class_name StorageTask
 

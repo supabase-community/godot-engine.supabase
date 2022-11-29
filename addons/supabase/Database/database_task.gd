@@ -1,7 +1,6 @@
+@tool
 extends BaseTask
 class_name DatabaseTask
-
-var query_result = null
 
 func match_code(code : int) -> int:
 	match code:
@@ -13,12 +12,12 @@ func match_code(code : int) -> int:
 
 func _on_task_completed(result : int, response_code : int, headers : PackedStringArray, body : PackedByteArray, handler: HTTPRequest) -> void:
 	var result_body = JSON.parse_string(body.get_string_from_utf8())
-	if response_code in [200, 201, 204]:
-		complete(query_result)
+	if response_code < 300:
+		complete(result_body)
 	else:
 		var supabase_error : SupabaseDatabaseError = SupabaseDatabaseError.new(result_body)
-		complete({}, supabase_error)
+		complete(null, supabase_error)
 	handler.queue_free()
 
 func complete(_data = null, _error : SupabaseDatabaseError = null) -> void:
-	super._complete(data, _error)
+	super._complete(_data, _error)
