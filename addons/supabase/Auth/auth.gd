@@ -75,7 +75,7 @@ func sign_up(email : String, password : String) -> AuthTask:
 		_header,
 		payload
 	)
-	await _process_task(auth_task)
+	_process_task(auth_task)
 	return auth_task
 
 
@@ -89,7 +89,7 @@ func sign_up_phone(phone : String, password : String) -> AuthTask:
 		_config.supabaseUrl + _signup_endpoint, 
 		_header,
 		JSON.stringify(payload))
-	await _process_task(auth_task)
+	_process_task(auth_task)
 	return auth_task
 
 
@@ -103,7 +103,7 @@ func sign_in(email : String, password : String = "") -> AuthTask:
 		_header,
 		JSON.stringify(payload)
 	)
-	await _process_task(auth_task)
+	_process_task(auth_task)
 	return auth_task
 
 
@@ -117,7 +117,7 @@ func sign_in_phone(phone : String, password : String = "") -> AuthTask:
 		_config.supabaseUrl + _signin_endpoint, 
 		_header,
 		JSON.stringify(payload))
-	await _process_task(auth_task)
+	_process_task(auth_task)
 	return auth_task
 
 
@@ -131,7 +131,7 @@ func sign_in_otp(phone : String) -> AuthTask:
 		_config.supabaseUrl + _signin_otp_endpoint, 
 		_header,
 		JSON.stringify(payload))
-	await _process_task(auth_task)
+	_process_task(auth_task)
 	return auth_task
 
 
@@ -144,7 +144,7 @@ func verify_otp(phone : String, token : String) -> AuthTask:
 		_config.supabaseUrl + _verify_otp_endpoint, 
 		_header,
 		JSON.stringify(payload))
-	await _process_task(auth_task)
+	_process_task(auth_task)
 	return auth_task
 
 
@@ -154,7 +154,7 @@ func sign_in_anonymous() -> AuthTask:
 	if _auth != "": return _check_auth()
 	var auth_task : AuthTask = AuthTask.new()._setup(AuthTask.Task.SIGNINANONYM, "", [])
 	auth_task.user = SupabaseUser.new({user = {}, access_token = _config.supabaseKey})
-	await _process_task(auth_task, true)
+	_process_task(auth_task, true)
 	return auth_task
 
 
@@ -173,7 +173,7 @@ func sign_out() -> AuthTask:
 		AuthTask.Task.LOGOUT,
 		_config.supabaseUrl + _logout_endpoint, 
 		_header + __get_session_header())
-	await _process_task(auth_task)
+	_process_task(auth_task)
 	return auth_task
 
 
@@ -187,7 +187,7 @@ func send_magic_link(email : String)  -> AuthTask:
 		_config.supabaseUrl + _magiclink_endpoint, 
 		_header,
 		JSON.stringify(payload))
-	await _process_task(auth_task)
+	_process_task(auth_task)
 	return auth_task
 
 
@@ -197,7 +197,7 @@ func user(user_access_token : String = _auth) -> AuthTask:
 		AuthTask.Task.USER,
 		_config.supabaseUrl + _user_endpoint, 
 		_header + __get_session_header())
-	await _process_task(auth_task)
+	_process_task(auth_task)
 	return auth_task
 
 
@@ -209,7 +209,7 @@ func update(email : String, password : String = "", data : Dictionary = {}) -> A
 		_config.supabaseUrl + _user_endpoint, 
 		_header + __get_session_header(),
 		JSON.stringify(payload))
-	await _process_task(auth_task)
+	_process_task(auth_task)
 	return auth_task
 
 
@@ -221,7 +221,7 @@ func reset_password_for_email(email : String) -> AuthTask:
 		_config.supabaseUrl + _reset_password_endpoint, 
 		_header,
 		JSON.stringify(payload))
-	await _process_task(auth_task)
+	_process_task(auth_task)
 	return auth_task
 
 
@@ -233,7 +233,7 @@ func invite_user_by_email(email : String) -> AuthTask:
 		_config.supabaseUrl + _invite_endpoint, 
 		_header + __get_session_header(),
 		JSON.stringify(payload))
-	await _process_task(auth_task)
+	_process_task(auth_task)
 	return auth_task
 
 
@@ -247,7 +247,7 @@ func refresh_token(refresh_token : String = client.refresh_token, expires_in : f
 		_config.supabaseUrl + _refresh_token_endpoint, 
 		_header + __get_session_header(),
 		JSON.stringify(payload))
-	await _process_task(auth_task)
+	_process_task(auth_task)
 	return auth_task 
 
 
@@ -273,7 +273,7 @@ func _process_task(task : AuthTask, _fake : bool = false) -> void:
 	else:
 		var httprequest : HTTPRequest = HTTPRequest.new()
 		add_child(httprequest)
-		await task.push_request(httprequest)
+		task.push_request(httprequest)
 
 
 func _on_task_completed(task : AuthTask) -> void:

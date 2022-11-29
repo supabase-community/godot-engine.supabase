@@ -80,7 +80,7 @@ func list(prefix : String = "", limit : int = 100, offset : int = 0, sort_by : D
 		endpoint, 
 		header + _bearer,
 		JSON.stringify({prefix = prefix, limit = limit, offset = offset, sort_by = sort_by}))
-	await _process_task(task)
+	_process_task(task)
 	return task
 
 
@@ -146,7 +146,7 @@ func move(source_path : String, destination_path : String) -> StorageTask:
 		endpoint, 
 		header + _bearer,
 		JSON.stringify({bucketId = id, sourceKey = source_path, destinationKey = destination_path}))
-	await _process_task(task)
+	_process_task(task)
 	return task
 
 
@@ -160,7 +160,7 @@ func create_signed_url(object : String, expires_in : int = 60000) -> StorageTask
 		header + _bearer,
 		JSON.stringify({expiresIn = expires_in})
 	)
-	await _process_task(task)
+	_process_task(task)
 	return task
 
 
@@ -174,7 +174,7 @@ func download(object : String, to_path : String = "", private : bool = false) ->
 			endpoint, 
 			header + _bearer
 			)
-		await _process_task(task, {download_file = to_path})
+		_process_task(task, {download_file = to_path})
 		return task
 	else:
 		var endpoint : String = _config.supabaseUrl + _rest_endpoint + "authenticated/" + id + "/" + object
@@ -185,7 +185,7 @@ func download(object : String, to_path : String = "", private : bool = false) ->
 			endpoint, 
 			header + _bearer
 			)
-		await _process_task(task, {download_file = to_path})
+		_process_task(task, {download_file = to_path})
 		return task        
 
 
@@ -202,7 +202,7 @@ func remove(objects : PackedStringArray) -> StorageTask:
 		endpoint, 
 		header + _bearer,
 		JSON.stringify({prefixes = objects}) if objects.size() > 1 else "" )
-	await _process_task(task)
+	_process_task(task)
 	return task
 
 

@@ -33,7 +33,6 @@ func match_code(code : int) -> int:
 func push_request(httprequest : HTTPRequest) -> void:
 	httprequest.request_completed.connect(_on_task_completed.bind(httprequest))
 	httprequest.request(_endpoint, _headers, true, _method, _payload)
-	await httprequest.request_completed
 
 func _on_task_completed(result : int, response_code : int, headers : PackedStringArray, body : PackedByteArray, handler: HTTPRequest) -> void:
 	pass

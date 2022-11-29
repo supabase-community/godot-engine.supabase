@@ -32,7 +32,7 @@ func query(supabase_query : SupabaseQuery) -> DatabaseTask:
 		_header + get_parent().auth.__get_session_header() + supabase_query.header, 
 		supabase_query.body
 		)
-	await _process_task(task)
+	_process_task(task)
 	return task
 
 # Issue an rpc() call to a function
@@ -45,7 +45,7 @@ func Rpc(function_name : String, arguments : Dictionary = {}, supabase_query : S
 		_header + get_parent().auth.__get_session_header(), 
 		JSON.stringify(arguments)
 		)
-	await _process_task(task)
+	_process_task(task)
 	return task    
 
 func _process_task(task : DatabaseTask) -> void:
@@ -53,7 +53,7 @@ func _process_task(task : DatabaseTask) -> void:
 	add_child(httprequest)
 	task.completed.connect(_on_task_completed)
 	_pooled_tasks.append(task)
-	await task.push_request(httprequest)
+	task.push_request(httprequest)
 
 # .............. HTTPRequest completed
 func _on_task_completed(task : DatabaseTask) -> void:

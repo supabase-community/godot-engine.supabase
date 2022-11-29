@@ -29,7 +29,7 @@ func list_buckets() -> StorageTask:
 		task.METHODS.LIST_BUCKETS, 
 		endpoint, 
 		_header + get_parent()._auth.__get_session_header())
-	await _process_task(task)
+	_process_task(task)
 	return task    
 
 
@@ -40,7 +40,7 @@ func get_bucket(id : String) -> StorageTask:
 		task.METHODS.GET_BUCKET, 
 		endpoint, 
 		_header + get_parent()._auth.__get_session_header())
-	await _process_task(task)
+	_process_task(task)
 	return task    
 
 
@@ -52,7 +52,7 @@ func create_bucket(_name : String, id : String, public : bool = false) -> Storag
 		endpoint, 
 		_header + get_parent()._auth.__get_session_header(),
 		JSON.stringify({name = _name, id = id, public = public}))
-	await _process_task(task)
+	_process_task(task)
 	return task    
 
 
@@ -64,7 +64,7 @@ func update_bucket(id : String, public : bool) -> StorageTask:
 		endpoint, 
 		_header + get_parent()._auth.__get_session_header(),
 		JSON.stringify({public = public}))
-	await _process_task(task)
+	_process_task(task)
 	return task        
 
 
@@ -75,7 +75,7 @@ func empty_bucket(id : String) -> StorageTask:
 		task.METHODS.EMPTY_BUCKET, 
 		endpoint, 
 		get_parent()._auth.__get_session_header())
-	await _process_task(task)
+	_process_task(task)
 	return task        
 
 
@@ -86,7 +86,7 @@ func delete_bucket(id : String) -> StorageTask:
 		task.METHODS.DELETE_BUCKET, 
 		endpoint, 
 		get_parent()._auth.__get_session_header())
-	await _process_task(task)
+	_process_task(task)
 	return task        
 
 
@@ -105,7 +105,7 @@ func _process_task(task : StorageTask) -> void:
 	add_child(httprequest)
 	_pooled_tasks.append(task)
 	task.completed.connect(_on_task_completed)
-	await task.push_request(httprequest)
+	task.push_request(httprequest)
 
 # .............. HTTPRequest completed
 func _on_task_completed(task : StorageTask) -> void:

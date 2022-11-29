@@ -26,6 +26,7 @@ Multiple approaches!
 
 *Asynchronous (signals)*
 ```gdscript
+# method 1 (connecting to `Supabase.auth.signed_in` signal)
 func _ready():
 	Supabase.auth.signed_in.connect(_on_signed_in)
 	Supabase.auth.sign_in(
@@ -35,6 +36,16 @@ func _ready():
 
 func _on_signed_in(user: SupabaseUser) -> void:
 	print(user)
+
+# method 2 (using lambdas, connecting to the `AuthTask.completed` signal)
+func _ready():
+	Supabase.auth.sign_in(
+		"user@supabase.email",
+		"userpwd"
+	).completed.connect(
+		func(authTask: AuthTask) -> void:
+			print(auth_task.user)
+	)
 ```
 
 *Synchronous (await)*
@@ -43,6 +54,6 @@ func _ready():
 	var auth_task: AuthTask = await Supabase.auth.sign_in(
 		"user@supabase.email",
 		"userpwd"
-	)
+	).completed
 	print(auth_task.user)
 ```
