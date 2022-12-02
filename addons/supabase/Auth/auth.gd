@@ -57,7 +57,6 @@ func _init(conf : Dictionary, head : PoolStringArray) -> void:
 	name = "Authentication"  
 
 func _check_auth() -> AuthTask:
-	null
 	var auth_task : AuthTask = AuthTask.new(-1, "", [], {})
 	auth_task.emit_signal("completed")
 	return auth_task
