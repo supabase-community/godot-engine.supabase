@@ -69,11 +69,11 @@ func _check_auth() -> AuthTask:
 func sign_up(email : String, password : String) -> AuthTask:
 	if _auth != "": return _check_auth()
 	var payload : Dictionary = {"email":email, "password":password}
-	var auth_task : AuthTask = AuthTask.new._setup(
+	var auth_task : AuthTask = AuthTask.new()._setup(
 		AuthTask.Task.SIGNUP,
 		_config.supabaseUrl + _signup_endpoint, 
 		_header,
-		payload
+		JSON.stringify(payload)
 	)
 	_process_task(auth_task)
 	return auth_task
