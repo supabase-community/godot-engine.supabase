@@ -264,7 +264,7 @@ func _internal_process(_delta : float) -> void:
 		HTTPClient.STATUS_CONNECTION_ERROR:
 			task.error = SupabaseStorageError.new({statusCode = HTTPRequest.RESULT_CONNECTION_ERROR})
 		HTTPClient.STATUS_TLS_HANDSHAKE_ERROR:
-			task.error = SupabaseStorageError.new({statusCode = HTTPRequest.RESULT_SSL_HANDSHAKE_ERROR})
+			task.error = SupabaseStorageError.new({statusCode = HTTPRequest.RESULT_TLS_HANDSHAKE_ERROR})
 
 
 # ---
