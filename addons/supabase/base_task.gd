@@ -30,10 +30,10 @@ func _setup(code: int, endpoint: String, headers: PackedStringArray, payload: St
 func match_code(code : int) -> int:
 	return -1
 
-func push_request(httprequest : HTTPRequest) -> Signal:
+func push_request(httprequest : HTTPRequest) -> void:
+	reference()
 	httprequest.request_completed.connect(_on_task_completed.bind(httprequest))
 	httprequest.request(_endpoint, _headers, true, _method, _payload)
-	return httprequest.request_completed
 
 func _on_task_completed(result : int, response_code : int, headers : PackedStringArray, body : PackedByteArray, handler: HTTPRequest) -> void:
 	pass
@@ -42,6 +42,7 @@ func _complete(_data = null, _error : BaseError = null) -> void:
 	data = _data
 	error = _error
 	completed.emit(self)
+	unreference()
 
 func _to_string() -> String:
 	return "%s, %s" % [data, error]
