@@ -273,7 +273,7 @@ func _process_task(task : AuthTask, _fake : bool = false) -> void:
 	else:
 		var httprequest : HTTPRequest = HTTPRequest.new()
 		add_child(httprequest)
-		task.push_request(httprequest)
+		await task.push_request(httprequest)
 
 
 func _on_task_completed(task : AuthTask) -> void:
