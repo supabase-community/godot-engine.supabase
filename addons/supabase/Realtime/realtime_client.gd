@@ -5,6 +5,12 @@ extends Node
 signal connected()
 signal disconnected()
 signal error(message)
+signal message_received(message: Dictionary)
+
+@export var handshake_headers : PackedStringArray
+@export var supported_protocols : PackedStringArray
+@export var tls_trusted_certificate : X509Certificate
+@export var tls_verify := true
 
 class PhxEvents:
 	const JOIN := "phx_join"
@@ -27,8 +33,9 @@ var _apikey : String
 var _ws_client = WebSocketPeer.new()
 var _heartbeat_timer : Timer = Timer.new()
 
+var last_state = WebSocketPeer.STATE_CLOSED
+
 func _init(url : String, apikey : String, timeout : float) -> void:
-	set_process_internal(false)
 	_db_url = url.replace("http","ws")+"/realtime/v1/websocket"
 	_apikey = apikey
 	_heartbeat_timer.set_wait_time(timeout)
@@ -36,39 +43,27 @@ func _init(url : String, apikey : String, timeout : float) -> void:
 	name = "RealtimeClient"
 	
 func _ready() -> void:
+	message_received.connect(_on_data)
 	add_child(_heartbeat_timer)
-
-func _connect_signals() -> void:
-	_ws_client.connection_closed.connect(_closed)
-	_ws_client.connection_error.connect(_error)
-	_ws_client.connection_established.connect(_connected)
-	_ws_client.data_received.connect(_on_data)
-	_heartbeat_timer.timeout.connect(_on_timeout)
-
-func _disconnect_signals() -> void:
-	_ws_client.disconnection_closed.connect(_closed)
-	_ws_client.disconnection_error.connect(_error)
-	_ws_client.disconnection_established.connect(_connected)
-	_ws_client.disdata_received.connect(_on_data)
-	_heartbeat_timer.timeout.connect(_on_timeout)
+	_heartbeat_timer.timeout.connect(
+		func():
+			if last_state == _ws_client.STATE_OPEN:
+				_send_heartbeat()
+	)
 
 func connect_client() -> int:
-	set_process_internal(true)
-	_connect_signals()
-	var err = _ws_client.connect_to_url("{url}?apikey={apikey}".format({url = _db_url, apikey = _apikey}))
+	_ws_client.supported_protocols = supported_protocols
+	_ws_client.handshake_headers = handshake_headers
+	
+	var err = _ws_client.connect_to_url("{url}?apikey={apikey}".format({url = _db_url, apikey = _apikey}), tls_verify, tls_trusted_certificate)
 	if err != OK:
-		_disconnect_signals()
-		_heartbeat_timer.stop()
-	else:
-		_heartbeat_timer.start()
-	return err
+		return err
+	last_state = _ws_client.get_ready_state()
+	return OK
 
-func disconnect_client() -> void:
-	_ws_client.disconnect_from_host(1000, "Disconnection requested from client.")
-	set_process_internal(false)
-
-func remove_client() -> void:
-	queue_free()
+func disconnect_client(code := 1000, reason := "") -> void:
+	_ws_client.close(code, reason)
+	last_state = _ws_client.get_ready_state()
 
 func channel(schema : String, table : String = "", col_value : String = "") -> RealtimeChannel:
 	var topic : String = _build_topic(schema, table, col_value)
@@ -92,20 +87,7 @@ func _add_channel(channel : RealtimeChannel) -> void:
 func _remove_channel(channel : RealtimeChannel) -> void:
 	channels.erase(channel)
 
-func _connected(proto = ""):
-	emit_signal("connected")
-
-func _closed(was_clean : bool = false):
-	channels = []
-	_disconnect_signals()
-	emit_signal("disconnected")
-	
-
-func _error(msg : String = "") -> void: 
-	emit_signal("error", msg)
-
-func _on_data() -> void:
-	var data : Dictionary = get_message(_ws_client.get_peer(1).get_packet())
+func _on_data(data : Dictionary) -> void:
 	match data.event:
 		PhxEvents.REPLY:
 			if _check_response(data) == 0:
@@ -138,19 +120,11 @@ func get_channel(topic : String) -> RealtimeChannel:
 
 func _check_response(message : Dictionary):
 	if message.payload.status == "ok":
-		return 0
+		return OK
 
-func get_message(pb : PackedByteArray) -> Dictionary:
-	return JSON.parse_string(pb.get_string_from_utf8())
-		
-func send_message(json_message : Dictionary) -> void:
-	if not _ws_client.get_peer(1).is_connected_to_host():
-		await connected
-		_ws_client.get_peer(1).put_packet(JSON.stringify(json_message).to_utf8_buffer())
-	else:
-		_ws_client.get_peer(1).put_packet(JSON.stringify(json_message).to_utf8_buffer())
-		
-		
+func send_message(json_message : Dictionary) -> int:
+	return _ws_client.send(JSON.stringify(json_message).to_utf8_buffer())
+
 func _send_heartbeat() -> void:
 	send_message({
 		topic = "phoenix",
@@ -159,15 +133,33 @@ func _send_heartbeat() -> void:
 		ref = null
 	})
 	
-func _on_timeout() -> void:
-	if _ws_client.get_peer(1).is_connected_to_host():
-		_send_heartbeat()
-
 func _notification(what) -> void:
 	match what:
 		NOTIFICATION_INTERNAL_PROCESS:
-			_internal_process(get_process_delta_time())
+			_process(get_process_delta_time())
 
-func _internal_process(_delta : float) -> void:
-	_ws_client.poll()
+func _process(_delta : float) -> void:
+	if _ws_client.get_ready_state() != _ws_client.STATE_CLOSED:
+		_ws_client.poll()
 	
+	var state = _ws_client.get_ready_state()
+	
+	if last_state != state:
+		last_state = state
+		if state == _ws_client.STATE_OPEN:
+			_heartbeat_timer.start()
+			connected.emit()
+		elif state == _ws_client.STATE_CLOSED:
+			channels = []
+			_heartbeat_timer.stop()
+			disconnected.emit()
+	while _ws_client.get_ready_state() == _ws_client.STATE_OPEN and _ws_client.get_available_packet_count():
+		message_received.emit(JSON.parse_string(get_message()))
+	
+func get_message() -> Variant:
+	if _ws_client.get_available_packet_count() < 1:
+		return null
+	var pkt = _ws_client.get_packet()
+	if _ws_client.was_string_packet():
+		return pkt.get_string_from_utf8()
+	return bytes_to_var(pkt)
