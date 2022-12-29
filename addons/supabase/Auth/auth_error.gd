@@ -5,7 +5,7 @@ class_name SupabaseAuthError
 func _init(dictionary : Dictionary = {}) -> void:
 	_error = dictionary
 	if not _error.is_empty():
-		hint = _error.get("error", "(undefined)")
+		type = _error.get("error", "(undefined)")
 		hint = _error.get("error_description", "(undefined)")
 		if _error.has("code"):
 			code = str(_error.get("code", -1))

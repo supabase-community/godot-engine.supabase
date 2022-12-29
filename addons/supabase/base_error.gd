@@ -4,6 +4,7 @@ class_name BaseError
 
 var _error : Dictionary
 var code : String = "empty"
+var type : String = "empty"
 var message : String = "empty"
 var hint : String = "empty"
 var details
