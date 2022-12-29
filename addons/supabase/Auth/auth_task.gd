@@ -33,7 +33,11 @@ func match_code(code: int = Task.NONE) -> int:
 			return HTTPClient.METHOD_GET
 
 func _on_task_completed(result : int, response_code : int, headers : PackedStringArray, body : PackedByteArray, handler: HTTPRequest) -> void:
-	var result_body : Dictionary = JSON.parse_string(body.get_string_from_utf8())
+	var result_body : Dictionary
+	
+	if(!body.is_empty()):
+		result_body = JSON.parse_string(body.get_string_from_utf8())
+	
 	match response_code:
 		200:
 			match _code:
@@ -46,7 +50,6 @@ func _on_task_completed(result : int, response_code : int, headers : PackedStrin
 				Task.LOGOUT, Task.USER:
 					complete()
 		_:
-			if result_body == null : result_body = {}
 			complete(null, {}, SupabaseAuthError.new(result_body))
 	handler.queue_free()
 
