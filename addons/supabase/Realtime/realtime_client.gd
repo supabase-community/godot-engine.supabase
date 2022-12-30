@@ -4,7 +4,7 @@ extends Node
 
 signal connected()
 signal disconnected()
-signal error(message)
+signal error(message: Dictionary)
 signal message_received(message: Dictionary)
 
 @export var handshake_headers : PackedStringArray
@@ -25,15 +25,13 @@ class SupabaseEvents:
 	const INSERT:= "INSERT"
 	const ALL := "*"
 
-var channels : Array = []
-
 var _db_url : String
 var _apikey : String
 
-var _ws_client = WebSocketPeer.new()
-var _heartbeat_timer : Timer = Timer.new()
-
-var last_state = WebSocketPeer.STATE_CLOSED
+var channels := []
+var last_state := WebSocketPeer.STATE_CLOSED
+var _ws_client := WebSocketPeer.new()
+var _heartbeat_timer := Timer.new()
 
 func _init(url : String, apikey : String, timeout : float) -> void:
 	_db_url = url.replace("http","ws")+"/realtime/v1/websocket"
@@ -46,7 +44,7 @@ func _ready() -> void:
 	message_received.connect(_on_data)
 	add_child(_heartbeat_timer)
 	_heartbeat_timer.timeout.connect(
-		func():
+		func() -> void:
 			if last_state == _ws_client.STATE_OPEN:
 				_send_heartbeat()
 	)
@@ -55,13 +53,13 @@ func connect_client() -> int:
 	_ws_client.supported_protocols = supported_protocols
 	_ws_client.handshake_headers = handshake_headers
 	
-	var err = _ws_client.connect_to_url("{url}?apikey={apikey}".format({url = _db_url, apikey = _apikey}), tls_verify, tls_trusted_certificate)
+	var err := _ws_client.connect_to_url("{url}?apikey={apikey}".format({url = _db_url, apikey = _apikey}), tls_verify, tls_trusted_certificate)
 	if err != OK:
 		return err
 	last_state = _ws_client.get_ready_state()
 	return OK
 
-func disconnect_client(code := 1000, reason := "") -> void:
+func disconnect_client(code : int = 1000, reason : String = "") -> void:
 	_ws_client.close(code, reason)
 	last_state = _ws_client.get_ready_state()
 
@@ -90,15 +88,15 @@ func _remove_channel(channel : RealtimeChannel) -> void:
 func _on_data(data : Dictionary) -> void:
 	match data.event:
 		PhxEvents.REPLY:
-			if _check_response(data) == 0:
+			if _check_response(data) == OK:
 				pass
 				get_parent().get_parent()._print_debug("Received reply = %s" % JSON.stringify(data))
 		PhxEvents.JOIN:
-			if _check_response(data) == 0:
+			if _check_response(data) == OK:
 				pass
 				get_parent().get_parent()._print_debug("Joined topic '%s'" % data.topic)
 		PhxEvents.LEAVE:
-			if _check_response(data) == 0:
+			if _check_response(data) == OK:
 				pass
 				get_parent().get_parent()._print_debug("Left topic '%s'" % data.topic)
 		PhxEvents.CLOSE:
@@ -118,9 +116,10 @@ func get_channel(topic : String) -> RealtimeChannel:
 			return channel
 	return null
 
-func _check_response(message : Dictionary):
+func _check_response(message : Dictionary) -> int:
 	if message.payload.status == "ok":
 		return OK
+	return FAILED
 
 func send_message(json_message : Dictionary) -> int:
 	return _ws_client.send(JSON.stringify(json_message).to_utf8_buffer())
@@ -133,7 +132,7 @@ func _send_heartbeat() -> void:
 		ref = null
 	})
 	
-func _notification(what) -> void:
+func _notification(what : int) -> void:
 	match what:
 		NOTIFICATION_INTERNAL_PROCESS:
 			_process(get_process_delta_time())
@@ -142,7 +141,7 @@ func _process(_delta : float) -> void:
 	if _ws_client.get_ready_state() != _ws_client.STATE_CLOSED:
 		_ws_client.poll()
 	
-	var state = _ws_client.get_ready_state()
+	var state := _ws_client.get_ready_state()
 	
 	if last_state != state:
 		last_state = state
@@ -159,7 +158,7 @@ func _process(_delta : float) -> void:
 func get_message() -> Variant:
 	if _ws_client.get_available_packet_count() < 1:
 		return null
-	var pkt = _ws_client.get_packet()
+	var pkt := _ws_client.get_packet()
 	if _ws_client.was_string_packet():
 		return pkt.get_string_from_utf8()
 	return bytes_to_var(pkt)
