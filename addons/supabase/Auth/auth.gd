@@ -147,7 +147,17 @@ func verify_otp(phone : String, token : String) -> AuthTask:
 	_process_task(auth_task)
 	return auth_task
 
-
+# Verify the OTP token sent to a user as an email
+func verify_otp_email(email : String, token : String, type : String) -> AuthTask:
+	if _auth != "": return _check_auth()
+	var payload : Dictionary = {email = email, token = token, type = type}
+	var auth_task : AuthTask = AuthTask.new()._setup(
+		AuthTask.Task.VERIFYOTP,
+		_config.supabaseUrl + _verify_otp_endpoint, 
+		_header,
+		JSON.stringify(payload))
+	_process_task(auth_task)
+	return auth_task
 
 # Sign in as an anonymous user
 func sign_in_anonymous() -> AuthTask:

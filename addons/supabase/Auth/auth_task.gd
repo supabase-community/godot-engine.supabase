@@ -25,7 +25,7 @@ var user : SupabaseUser
 
 func match_code(code: int = Task.NONE) -> int:
 	match code:
-		Task.SIGNIN, Task.SIGNUP, Task.LOGOUT, Task.MAGICLINK, Task.RECOVER, Task.REFRESH, Task.INVITE:
+		Task.SIGNIN, Task.SIGNUP, Task.LOGOUT, Task.MAGICLINK, Task.RECOVER, Task.REFRESH, Task.INVITE, Task.VERIFYOTP:
 			return HTTPClient.METHOD_POST
 		Task.UPDATE:
 			return HTTPClient.METHOD_PUT
