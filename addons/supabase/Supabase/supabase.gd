@@ -1,3 +1,4 @@
+@tool
 extends Node
 
 const ENVIRONMENT_VARIABLES : String = "supabase/config"
@@ -14,7 +15,7 @@ var config : Dictionary = {
 	"supabaseKey": ""
 }
 
-var header : PoolStringArray = [
+var header : PackedStringArray = [
 	"Content-Type: application/json",
 	"Accept: application/json"
 ]
@@ -51,7 +52,7 @@ func load_nodes() -> void:
 	add_child(realtime)
 	add_child(storage)
 
-func debug(debugging: bool) -> void:
+func set_debug(debugging: bool) -> void:
 	debug = debugging
 
 func _print_debug(msg: String) -> void:

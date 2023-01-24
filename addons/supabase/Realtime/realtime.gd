@@ -1,3 +1,4 @@
+@tool
 class_name SupabaseRealtime
 extends Node
 
@@ -10,7 +11,7 @@ func _init(config : Dictionary) -> void:
 func _ready():
 	pass # Replace with function body.
 
-func client(url : String = _config.supabaseUrl, apikey : String = _config.supabaseKey, timeout : float = 30) -> RealtimeClient:
+func client(url : String = _config.supabaseUrl, apikey : String = _config.supabaseKey, timeout : float = 30.) -> RealtimeClient:
 	var realtime_client : RealtimeClient =  RealtimeClient.new(url, apikey, timeout)
 	add_child(realtime_client)
 	return realtime_client

@@ -1,34 +1,6 @@
+@tool
+extends BaseTask
 class_name DatabaseTask
-extends Reference
-
-signal completed(task)
-
-var _code : int
-var _method : int
-var _endpoint : String
-var _headers : PoolStringArray
-var _payload : String
-var _query : SupabaseQuery
-
-# EXPOSED VARIABLES ---------------------------------------------------------
-var data 
-var error : SupabaseDatabaseError
-# ---------------------------------------------------------------------------
-
-var _handler : HTTPRequest
-
-func _init(data = null, error : SupabaseDatabaseError = null) -> void:
-	self.data = data
-	self.error = error
-
-func _setup(query : SupabaseQuery, code : int, endpoint : String, headers : PoolStringArray,  payload : String = ""):
-	_query = query
-	_code = code
-	_endpoint = endpoint
-	_headers = headers
-	_payload = payload
-	_method = match_code(code)
-
 
 func match_code(code : int) -> int:
 	match code:
@@ -38,22 +10,14 @@ func match_code(code : int) -> int:
 		SupabaseQuery.REQUESTS.DELETE: return HTTPClient.METHOD_DELETE
 		_: return HTTPClient.METHOD_POST
 
-func push_request(httprequest : HTTPRequest) -> void:
-	_handler = httprequest
-	httprequest.connect("request_completed", self, "_on_task_completed")
-	httprequest.request(_endpoint, _headers, true, _method, _payload)
-
-func _on_task_completed(result : int, response_code : int, headers : PoolStringArray, body : PoolByteArray) -> void:
-	var result_body = JSON.parse(body.get_string_from_utf8()).result if body.get_string_from_utf8() else {}
-	if response_code in [200, 201, 204]:
+func _on_task_completed(result : int, response_code : int, headers : PackedStringArray, body : PackedByteArray, handler: HTTPRequest) -> void:
+	var result_body = JSON.parse_string(body.get_string_from_utf8())
+	if response_code < 300:
 		complete(result_body)
 	else:
 		var supabase_error : SupabaseDatabaseError = SupabaseDatabaseError.new(result_body)
 		complete(null, supabase_error)
-	if _query!=null: _query.clean()
+	handler.queue_free()
 
-func complete(_result,  _error : SupabaseDatabaseError = null) -> void:
-	data = _result
-	error = _error
-	if _handler : _handler.queue_free()
-	emit_signal("completed", self)
+func complete(_data = null, _error : SupabaseDatabaseError = null) -> void:
+	super._complete(_data, _error)
