@@ -198,7 +198,10 @@ func user(user_access_token : String = _auth) -> AuthTask:
 
 # Update credentials of the authenticated user, together with optional metadata
 func update(email : String, password : String = "", data : Dictionary = {}) -> AuthTask:
-	var payload : Dictionary = {"email":email, "password":password, "data" : data}
+	var payload : Dictionary = {"email":email, "data" : data}
+	if password != "":
+		payload["password"] = password
+
 	var auth_task : AuthTask = AuthTask.new(
 		AuthTask.Task.UPDATE,
 		_config.supabaseUrl + _user_endpoint, 
