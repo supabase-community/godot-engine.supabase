@@ -198,10 +198,7 @@ func user(user_access_token : String = _auth) -> AuthTask:
 
 # Update credentials of the authenticated user, together with optional metadata
 func update(email : String, password : String = "", data : Dictionary = {}) -> AuthTask:
-	var payload : Dictionary = {"email":email, "data" : data}
-	if password != "":
-		payload["password"] = password
-
+	var payload : Dictionary = {"email":email, "password" : password, "data" : data}
 	var auth_task : AuthTask = AuthTask.new(
 		AuthTask.Task.UPDATE,
 		_config.supabaseUrl + _user_endpoint, 
@@ -210,6 +207,16 @@ func update(email : String, password : String = "", data : Dictionary = {}) -> A
 	_process_task(auth_task)
 	return auth_task
 
+# Update email of the authenticated user
+func update_email(email : String) -> AuthTask:
+	var payload : Dictionary = {"email":email}
+	var auth_task : AuthTask = AuthTask.new()._setup(
+		AuthTask.Task.UPDATE,
+		_config.supabaseUrl + _user_endpoint, 
+		_header + __get_session_header(),
+		JSON.stringify(payload))
+	_process_task(auth_task)
+	return auth_task
 
 # Request a reset password mail to the specified email
 func reset_password_for_email(email : String) -> AuthTask:
