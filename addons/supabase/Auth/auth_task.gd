@@ -33,6 +33,10 @@ func match_code(code: int = Task.NONE) -> int:
             return HTTPClient.METHOD_GET
 
 func _on_task_completed(result : int, response_code : int, headers : PackedStringArray, body : PackedByteArray, handler: HTTPRequest) -> void:
+    if result != 0:
+        complete(null, {}, SupabaseAuthError.new({ error = "Could not connect", code = result }))
+        return
+    
     var result_body : Dictionary
     
     if(!body.is_empty()):
