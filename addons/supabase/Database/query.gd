@@ -9,6 +9,10 @@ var query_struct : Dictionary = {
     Or = PackedStringArray([]),
     eq = PackedStringArray([]),
     neq = PackedStringArray([]),
+    gt = PackedStringArray([]),
+    gte = PackedStringArray([]),
+    lt = PackedStringArray([]),
+    lte = PackedStringArray([]),
     like = PackedStringArray([]),
     ilike = PackedStringArray([]),
     Is = PackedStringArray([]),
@@ -87,6 +91,7 @@ func build_query() -> String:
                     query += "&".join(PackedStringArray(query_struct[key]))
                 "Or":
                     query += "or=(%s)"%[",".join(query_struct[key])]
+    print(query)
     return query
 
 

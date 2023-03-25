@@ -11,7 +11,7 @@ func match_code(code : int) -> int:
         _: return HTTPClient.METHOD_POST
 
 func _on_task_completed(result : int, response_code : int, headers : PackedStringArray, body : PackedByteArray, handler: HTTPRequest) -> void:
-    var result_body = JSON.parse_string(body.get_string_from_utf8())
+    var result_body: Variant = JSON.parse_string(body.get_string_from_utf8())
     if response_code < 300:
         complete(result_body)
     else:
