@@ -219,7 +219,7 @@ func _internal_process(_delta : float) -> void:
     
     match _http_client.get_status():
         HTTPClient.STATUS_DISCONNECTED:
-            _http_client.connect_to_host(_config.supabaseUrl, 443, true)
+            _http_client.connect_to_host(_config.supabaseUrl, 443)
         
         HTTPClient.STATUS_RESOLVING, HTTPClient.STATUS_REQUESTING, HTTPClient.STATUS_CONNECTING:
             _http_client.poll()
