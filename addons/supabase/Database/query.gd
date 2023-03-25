@@ -242,7 +242,7 @@ func text_seach(column : String, query : String, type : String = "", config : St
     var filter : int
     match type:
         "plain": filter = Filters.PLFTS
-        "phrase": filter = Filters.PHFLTS
+        "phrase": filter = Filters.PHFTS
         "websearch": filter = Filters.WFTS
         _: filter = Filters.FTS
     query = query.replacen(" ", "%20")
