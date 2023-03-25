@@ -10,7 +10,7 @@ var hint : String = "empty"
 var details
 
 func _init(dictionary : Dictionary = {}) -> void:
-	pass
+    pass
 
 func _to_string() -> String:
-	return "%s >> %s: %s (%s)" % [code, message, details, hint]
+    return "%s >> %s: %s (%s)" % [code, message, details, hint]
