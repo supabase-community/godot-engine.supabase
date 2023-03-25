@@ -332,11 +332,10 @@ func _on_task_completed(task : AuthTask) -> void:
                     AuthTask.Task.INVITE:
                         user_invited.emit()
                     AuthTask.Task.LOGOUT:
-                        signed_out.emit()
                         client = null
                         _auth = ""
                         _expires_in = 0
-                
+                        signed_out.emit()
 
 # A timer used to listen through TCP on the redirect uri of the request
 func _tcp_stream_timer() -> void:
