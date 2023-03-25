@@ -10,7 +10,8 @@ signal message_received(message: Dictionary)
 @export var handshake_headers : PackedStringArray
 @export var supported_protocols : PackedStringArray
 @export var tls_trusted_certificate : X509Certificate
-@export var tls_verify := true
+
+var tls_options: TLSOptions = TLSOptions.client(tls_trusted_certificate)
 
 class PhxEvents:
     const JOIN := "phx_join"
@@ -53,7 +54,10 @@ func connect_client() -> int:
     _ws_client.supported_protocols = supported_protocols
     _ws_client.handshake_headers = handshake_headers
     
-    var err := _ws_client.connect_to_url("{url}?apikey={apikey}".format({url = _db_url, apikey = _apikey}), tls_verify, tls_trusted_certificate)
+    var err := _ws_client.connect_to_url(
+        "{url}?apikey={apikey}".format({url = _db_url, apikey = _apikey}), 
+        tls_options
+        )
     if err != OK:
         return err
     last_state = _ws_client.get_ready_state()
