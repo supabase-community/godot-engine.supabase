@@ -50,14 +50,14 @@ func get_bucket(id : String) -> StorageTask:
 	return task    
 
 
-func create_bucket(_name : String, id : String, public : bool = false) -> StorageTask:
+func create_bucket(_name : String, id : String, options: Dictionary = { public = false, file_size_limit = "100mb", allowed_mime_types = ["*/*"] }) -> StorageTask:
 	var endpoint : String = _config.supabaseUrl + _rest_endpoint + "bucket"
 	var task : StorageTask = StorageTask.new()
 	task._setup(
 		task.METHODS.CREATE_BUCKET, 
 		endpoint, 
 		_header + get_parent().auth.__get_session_header(),
-		JSON.stringify({name = _name, id = id, public = public}))
+		JSON.stringify({name = _name, id = id, public = options.get("public", false), file_size_limit = options.get("file_size_limit", "100mb"), allowed_mime_types = options.get("allowed_mime_types", ["*/*"]) }))
 	_process_task(task)
 	return task    
 
