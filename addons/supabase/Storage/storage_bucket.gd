@@ -149,7 +149,9 @@ func move(source_path : String, destination_path : String) -> StorageTask:
 	return task
 
 
-func create_signed_url(object : String, expires_in : int = 60000) -> StorageTask:
+func create_signed_url(object : String, expires_in : int = 60000, options: Dictionary = {
+	download = false, transform = { format = "origin" , quality = 80 , resize = "cover" , height = 100, width = 100 }
+}) -> StorageTask:
 	var endpoint : String = _config.supabaseUrl + _rest_endpoint + "sign/" + id + "/" + object
 	var task : StorageTask = StorageTask.new()
 	var header : PackedStringArray = [_header[0] % "application/json"]
@@ -157,8 +159,9 @@ func create_signed_url(object : String, expires_in : int = 60000) -> StorageTask
 		task.METHODS.CREATE_SIGNED_URL, 
 		endpoint, 
 		header + get_parent().get_parent().get_parent().auth.__get_session_header(),
-		JSON.stringify({expiresIn = expires_in})
+		JSON.stringify({expiresIn = expires_in, transform = options.get("transform", {}) })
 	)
+	task.set_meta("options", options)
 	_process_task(task)
 	return task
 
