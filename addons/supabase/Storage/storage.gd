@@ -17,10 +17,16 @@ var _header : PackedStringArray = ["Content-type: application/json"]
 
 var _pooled_tasks : Array = []
 
+var _tasks: Node = Node.new()
+var _buckets: Node = Node.new()
 
 func _init(config : Dictionary) -> void:
 	_config = config
 	name = "Storage"
+
+func _ready() -> void:
+	add_child(_tasks)
+	add_child(_buckets)
 
 func list_buckets() -> StorageTask:
 	var endpoint : String = _config.supabaseUrl + _rest_endpoint + "bucket"
@@ -91,18 +97,18 @@ func delete_bucket(id : String) -> StorageTask:
 
 
 func from(id : String) -> StorageBucket:
-	for bucket in get_children():
-		if bucket is StorageBucket and bucket.id == id:
+	for bucket in _buckets.get_children():
+		if bucket.id == id:
 			return bucket
-	var storage_bucket : StorageBucket = StorageBucket.new(id, _config, get_parent().auth._bearer)
-	add_child(storage_bucket)
+	var storage_bucket : StorageBucket = StorageBucket.new(id, _config)
+	_buckets.add_child(storage_bucket)
 	return storage_bucket
 
 # ---
 
 func _process_task(task : StorageTask) -> void:
 	var httprequest : HTTPRequest = HTTPRequest.new()
-	add_child(httprequest)
+	_tasks.add_child(httprequest)
 	_pooled_tasks.append(task)
 	task.completed.connect(_on_task_completed)
 	task.push_request(httprequest)

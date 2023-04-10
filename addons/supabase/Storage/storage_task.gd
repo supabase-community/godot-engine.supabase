@@ -21,6 +21,7 @@ enum METHODS {
    }
 
 var bytepayload : PackedByteArray
+var __json: JSON = JSON.new()
 
 func match_code(code : int) -> int:
 	match code:
@@ -33,13 +34,16 @@ func match_code(code : int) -> int:
 		_: return HTTPClient.METHOD_GET
 
 func _on_task_completed(result : int, response_code : int, headers : PackedStringArray, body : PackedByteArray, handler: HTTPRequest) -> void:
-	var result_body = JSON.parse_string(body.get_string_from_utf8())
+	var err: int = __json.parse(body.get_string_from_utf8())
+	var result_body = __json.data if err == OK else {}
 	if response_code in [200, 201, 204]:
 		if _code == METHODS.DOWNLOAD:
 			complete(body)
 		else:
 			complete(result_body)
 	else:
+		if result_body.is_empty():
+			result_body.statusCode = str(response_code)
 		var supabase_error : SupabaseStorageError = SupabaseStorageError.new(result_body)
 		complete(null, supabase_error)
 	if handler != null: handler.queue_free()

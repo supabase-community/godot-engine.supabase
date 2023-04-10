@@ -45,7 +45,6 @@ const _rest_endpoint : String = "/storage/v1/object/"
 
 var _config : Dictionary
 var _header : PackedStringArray = ["Content-Type: %s", "Content-Disposition: attachment"]
-var _bearer : PackedStringArray = ["Authorization: Bearer %s"]
 
 var _pooled_tasks : Array = []
 
@@ -63,23 +62,23 @@ var _response_code : int
 var id : String
 
 
-func _init(id : String , config : Dictionary, bearer : PackedStringArray) -> void:
+func _init(id : String , config : Dictionary) -> void:
 	_config = config
 	self.id = id
-	_bearer = bearer
 	name = "Bucket_"+id
 	set_process_internal(false)
 
 
 func list(prefix : String = "", limit : int = 100, offset : int = 0, sort_by : Dictionary = {column = "name", order = "asc"} ) -> StorageTask:
-	var endpoint : String = _config.supabaseUrl + _rest_endpoint + "list/" + id
+	var endpoint : String = _config.supabaseUrl + _rest_endpoint + "/list/" + id
 	var task : StorageTask = StorageTask.new()
 	var header : PackedStringArray = [_header[0] % "application/json"]
 	task._setup(
 		task.METHODS.LIST_OBJECTS, 
 		endpoint, 
-		header + _bearer,
-		JSON.stringify({prefix = prefix, limit = limit, offset = offset, sort_by = sort_by}))
+		header + get_parent().get_parent().get_parent().auth.__get_session_header(),
+		JSON.stringify({ prefix = prefix, limit = limit, offset = offset, sortBy = sort_by })
+	)
 	_process_task(task)
 	return task
 
@@ -94,15 +93,15 @@ func upload(object : String, file_path : String, upsert : bool = false) -> Stora
 		task.complete({})
 		return task
 	var header : PackedStringArray = [_header[0] % MIME_TYPES.get(file_path.get_extension(), "application/octet-stream")]
-	header.append("Content-Length: %s" % file.get_len())
+	header.append("Content-Length: %s" % file.get_length())
 	header.append("x-upsert: %s" % upsert)
 	task.completed.connect(_on_task_completed)
 	task._setup(
 		task.METHODS.UPLOAD_OBJECT, 
 		endpoint, 
-		header + _bearer
+		header + get_parent().get_parent().get_parent().auth.__get_session_header()
 	)
-	task.bytepayload = file.get_buffer(file.get_len())
+	task.bytepayload = file.get_buffer(file.get_length())
 	
 	_current_task = task
 	set_process_internal(requesting_raw)
@@ -127,7 +126,7 @@ func update(bucket_path : String, file_path : String) -> StorageTask:
 	task._setup(
 		task.METHODS.UPDATE_OBJECT, 
 		endpoint, 
-		header + _bearer
+		header + get_parent().get_parent().get_parent().auth.__get_session_header()
 	)
 	task.bytepayload = file.get_buffer(file.get_len())
 	
@@ -144,7 +143,7 @@ func move(source_path : String, destination_path : String) -> StorageTask:
 	task._setup(
 		task.METHODS.MOVE_OBJECT, 
 		endpoint, 
-		header + _bearer,
+		header + get_parent().get_parent().get_parent().auth.__get_session_header(),
 		JSON.stringify({bucketId = id, sourceKey = source_path, destinationKey = destination_path}))
 	_process_task(task)
 	return task
@@ -157,7 +156,7 @@ func create_signed_url(object : String, expires_in : int = 60000) -> StorageTask
 	task._setup(
 		task.METHODS.CREATE_SIGNED_URL, 
 		endpoint, 
-		header + _bearer,
+		header + get_parent().get_parent().get_parent().auth.__get_session_header(),
 		JSON.stringify({expiresIn = expires_in})
 	)
 	_process_task(task)
@@ -172,7 +171,7 @@ func download(object : String, to_path : String = "", private : bool = false) ->
 		task._setup(
 			task.METHODS.DOWNLOAD, 
 			endpoint, 
-			header + _bearer
+			header + get_parent().get_parent().get_parent().auth.__get_session_header()
 			)
 		_process_task(task, {download_file = to_path})
 		return task
@@ -183,7 +182,7 @@ func download(object : String, to_path : String = "", private : bool = false) ->
 		task._setup(
 			task.METHODS.DOWNLOAD, 
 			endpoint, 
-			header + _bearer
+			header + get_parent().get_parent().get_parent().auth.__get_session_header()
 			)
 		_process_task(task, {download_file = to_path})
 		return task        
@@ -200,7 +199,7 @@ func remove(objects : PackedStringArray) -> StorageTask:
 	task._setup(
 		task.METHODS.REMOVE, 
 		endpoint, 
-		header + _bearer,
+		header + get_parent().get_parent().get_parent().auth.__get_session_header(),
 		JSON.stringify({prefixes = objects}) if objects.size() > 1 else "" )
 	_process_task(task)
 	return task
@@ -225,7 +224,7 @@ func _internal_process(_delta : float) -> void:
 			_http_client.poll()
 
 		HTTPClient.STATUS_CONNECTED:
-			var err : int = _http_client.request_raw(task._method, task._endpoint.replace(_config.supabaseUrl, ""), task._headers, task._bytepayload)
+			var err : int = _http_client.request_raw(task._method, task._endpoint.replace(_config.supabaseUrl, ""), task._headers, task.bytepayload)
 			if err :
 				task.error = SupabaseStorageError.new({statusCode = HTTPRequest.RESULT_CONNECTION_ERROR})
 				_on_task_completed(task)
@@ -280,10 +279,9 @@ func _process_task(task : StorageTask, _params : Dictionary = {}) -> void:
 
 # .............. HTTPRequest completed
 func _on_task_completed(task : StorageTask) -> void:
-	if task._handler : task._handler.queue_free()
 	if requesting_raw:
 		_clear_raw_request()
-	if task.data!=null and not task.data.empty():    
+	if task.data!=null and not task.data.is_empty():    
 		match task._code:
 			task.METHODS.LIST_OBJECTS: emit_signal("listed_objects", task.data)
 			task.METHODS.UPLOAD_OBJECT: emit_signal("uploaded_object", task.data)
