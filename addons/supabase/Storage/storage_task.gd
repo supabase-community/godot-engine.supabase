@@ -41,7 +41,10 @@ func _on_task_completed(result : int, response_code : int, headers : PackedStrin
 			complete(body)
 		else:
 			if _code == METHODS.CREATE_SIGNED_URL:
-				result_body.signedURL = get_meta("base_url") + result_body.signedURL + "&download=%s" % get_meta("options").get("download")
+				result_body.signedURL = get_meta("base_url") + result_body.signedURL
+				var download = get_meta("options").get("download")
+				if download:
+					result_body.signedURL += "&download=%s" % download if (download is String) else get_meta("object")
 			complete(result_body)
 	else:
 		if result_body.is_empty():

@@ -148,8 +148,25 @@ func move(source_path : String, destination_path : String) -> StorageTask:
 	return task
 
 
+func download(object : String, to_path : String = "", private : bool = false, options: Dictionary = {
+	transform = { height = 100, width = 100, format = "origin", resize = "cover", quality = 80 }
+}  ) -> StorageTask:
+	var endpoint : String = _config.supabaseUrl + _rest_endpoint + \
+		("authenticated/" if private else "public/") + id + "/" + object + \
+		_get_transform_query(options.get("transform", {}))
+	var task : StorageTask = StorageTask.new()
+	var header : PackedStringArray = [_header[0] % "application/json"]
+	task._setup(
+		task.METHODS.DOWNLOAD, 
+		endpoint, 
+		header + get_parent().get_parent().get_parent().auth.__get_session_header()
+		)
+	_process_task(task, {download_file = to_path})
+	return task
+
+
 func create_signed_url(object : String, expires_in : int = 60000, options: Dictionary = {
-	download = "file", transform = { format = "origin" , quality = 80 , resize = "cover" , height = 100, width = 100 }
+	download = true, transform = { format = "origin" , quality = 80 , resize = "cover" , height = 100, width = 100 }
 }) -> StorageTask:
 	var endpoint : String = _config.supabaseUrl + _rest_endpoint + "sign/" + id + "/" + object
 	var task : StorageTask = StorageTask.new()
@@ -160,46 +177,19 @@ func create_signed_url(object : String, expires_in : int = 60000, options: Dicti
 		header + get_parent().get_parent().get_parent().auth.__get_session_header(),
 		JSON.stringify({expiresIn = expires_in, transform = options.get("transform", {}) })
 	)
+	task.set_meta("object", object)
 	task.set_meta("options", options)
 	task.set_meta("base_url", _config.supabaseUrl + _rest_endpoint.replace("/object/", ""))
 	_process_task(task)
 	return task
 
 
-func download(object : String, to_path : String = "", private : bool = false) -> StorageTask:
-	if not private:
-		var endpoint : String = _config.supabaseUrl + _rest_endpoint + "public/" + id + "/" + object
-		var task : StorageTask = StorageTask.new()
-		var header : PackedStringArray = [_header[0] % "application/json"]
-		task._setup(
-			task.METHODS.DOWNLOAD, 
-			endpoint, 
-			header + get_parent().get_parent().get_parent().auth.__get_session_header()
-			)
-		_process_task(task, {download_file = to_path})
-		return task
-	else:
-		var endpoint : String = _config.supabaseUrl + _rest_endpoint + "authenticated/" + id + "/" + object
-		var task : StorageTask = StorageTask.new()
-		var header : PackedStringArray = [_header[0] % "application/json"]
-		task._setup(
-			task.METHODS.DOWNLOAD, 
-			endpoint, 
-			header + get_parent().get_parent().get_parent().auth.__get_session_header()
-			)
-		_process_task(task, {download_file = to_path})
-		return task        
 
-
-func get_public_url(object: String, transform: Dictionary = {
+func get_public_url(object: String, options: Dictionary = { transform = {
 	height = 100, width = 100, format = "origin", resize = "cover", quality = 80
-} ) -> String:
+} }) -> String:
 	var url: String = _config.supabaseUrl + _rest_endpoint + "public/" + id + "/" + object
-	if not transform.keys().is_empty():
-		url += "?"
-	for key in transform.keys():
-		url += "&%s=%s" % [key, transform.get(key)]
-	return url
+	return url + _get_transform_query(options.get("transform", {}))
 
 
 func remove(objects : PackedStringArray) -> StorageTask:
@@ -214,6 +204,15 @@ func remove(objects : PackedStringArray) -> StorageTask:
 	_process_task(task)
 	return task
 
+
+
+func _get_transform_query(transform: Dictionary) -> String:
+	var query: String = ""
+	if not transform.keys().is_empty():
+		query += "?"
+	for key in transform.keys():
+		query += "&%s=%s" % [key, transform.get(key)]
+	return query
 
 func _notification(what : int) -> void:
 	if what == NOTIFICATION_INTERNAL_PROCESS:
