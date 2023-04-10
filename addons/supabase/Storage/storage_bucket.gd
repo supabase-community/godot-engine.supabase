@@ -61,7 +61,6 @@ var _response_code : int
 
 var id : String
 
-
 func _init(id : String , config : Dictionary) -> void:
 	_config = config
 	self.id = id
@@ -150,7 +149,7 @@ func move(source_path : String, destination_path : String) -> StorageTask:
 
 
 func create_signed_url(object : String, expires_in : int = 60000, options: Dictionary = {
-	download = false, transform = { format = "origin" , quality = 80 , resize = "cover" , height = 100, width = 100 }
+	download = "file", transform = { format = "origin" , quality = 80 , resize = "cover" , height = 100, width = 100 }
 }) -> StorageTask:
 	var endpoint : String = _config.supabaseUrl + _rest_endpoint + "sign/" + id + "/" + object
 	var task : StorageTask = StorageTask.new()
@@ -162,6 +161,7 @@ func create_signed_url(object : String, expires_in : int = 60000, options: Dicti
 		JSON.stringify({expiresIn = expires_in, transform = options.get("transform", {}) })
 	)
 	task.set_meta("options", options)
+	task.set_meta("base_url", _config.supabaseUrl + _rest_endpoint.replace("/object/", ""))
 	_process_task(task)
 	return task
 
@@ -191,8 +191,15 @@ func download(object : String, to_path : String = "", private : bool = false) ->
 		return task        
 
 
-func get_public_url(object : String) -> String:
-	return _config.supabaseUrl + _rest_endpoint + "public/" + id + "/" + object
+func get_public_url(object: String, transform: Dictionary = {
+	height = 100, width = 100, format = "origin", resize = "cover", quality = 80
+} ) -> String:
+	var url: String = _config.supabaseUrl + _rest_endpoint + "public/" + id + "/" + object
+	if not transform.keys().is_empty():
+		url += "?"
+	for key in transform.keys():
+		url += "&%s=%s" % [key, transform.get(key)]
+	return url
 
 
 func remove(objects : PackedStringArray) -> StorageTask:
