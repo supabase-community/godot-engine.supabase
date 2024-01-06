@@ -266,6 +266,7 @@ func _internal_process(_delta : float) -> void:
 
 func _process_task(task : StorageTask, _params : Dictionary = {}) -> void:
 	var httprequest : HTTPRequest = HTTPRequest.new()
+	httprequest.process_mode=Node.PROCESS_MODE_ALWAYS
 	add_child(httprequest)
 	if not _params.empty():
 		httprequest.download_file = _params.get("download_file", "")

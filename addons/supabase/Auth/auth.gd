@@ -266,6 +266,7 @@ func _process_task(task : AuthTask, _fake : bool = false) -> void:
 		task.complete(task.user, task.data, task.error)
 	else:
 		var httprequest : HTTPRequest = HTTPRequest.new()
+		httprequest.process_mode=Node.PROCESS_MODE_ALWAYS
 		add_child(httprequest)
 		task.push_request(httprequest)
 
