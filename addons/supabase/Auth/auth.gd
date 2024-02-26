@@ -66,9 +66,9 @@ func _check_auth() -> AuthTask:
 	return auth_task
 
 # Allow your users to sign up and create a new account.
-func sign_up(email : String, password : String) -> AuthTask:
+func sign_up(email : String, password : String, data: Dictionary = {}) -> AuthTask:
 	if _auth != "": return _check_auth()
-	var payload : Dictionary = {"email":email, "password":password}
+	var payload : Dictionary = {"email":email, "password":password, "data":data}
 	var auth_task : AuthTask = AuthTask.new()._setup(
 		AuthTask.Task.SIGNUP,
 		_config.supabaseUrl + _signup_endpoint, 
@@ -81,9 +81,9 @@ func sign_up(email : String, password : String) -> AuthTask:
 
 # Allow your users to sign up and create a new account using phone/password combination.
 # NOTE: the OTP sent to the user must be verified.
-func sign_up_phone(phone : String, password : String) -> AuthTask:
+func sign_up_phone(phone : String, password : String, data: Dictionary = {}) -> AuthTask:
 	if _auth != "": return _check_auth()
-	var payload : Dictionary = {"phone":phone, "password":password}
+	var payload : Dictionary = {"phone":phone, "password":password, "data":data}
 	var auth_task : AuthTask = AuthTask.new()._setup(
 		AuthTask.Task.SIGNUPPHONEPASSWORD,
 		_config.supabaseUrl + _signup_endpoint, 
