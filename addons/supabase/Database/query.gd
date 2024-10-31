@@ -167,7 +167,7 @@ func match_filter(filter : int) -> String:
 		Filters.EQUAL: filter_str = "eq"
 		Filters.FTS: filter_str = "fts"
 		Filters.ILIKE: filter_str = "ilike"
-		Filters.IN: filter_str = "in"
+		Filters.IN: filter_str = "In"
 		Filters.IS: filter_str = "Is"
 		Filters.GREATER_THAN: filter_str = "gt"
 		Filters.GREATER_THAN_OR_EQUAL: filter_str = "gte"
