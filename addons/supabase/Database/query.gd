@@ -87,7 +87,7 @@ func build_query() -> String:
 				"select", "order":
 					if query_struct[key].is_empty(): continue
 					query += (key + "=" + ",".join(PackedStringArray(query_struct[key])))
-				"eq", "neq", "lt", "gt", "lte", "gte", "like", "ilike", "Is", "in", "fts", "plfts", "phfts", "wfts":
+				"eq", "neq", "lt", "gt", "lte", "gte", "like", "ilike", "Is", "In", "fts", "plfts", "phfts", "wfts":
 					query += "&".join(PackedStringArray(query_struct[key]))
 				"Or":
 					query += "or=(%s)"%[",".join(query_struct[key])]
