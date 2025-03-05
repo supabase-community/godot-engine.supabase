@@ -26,9 +26,11 @@ signal reset_email_sent()
 signal token_refreshed(refreshed_user: SupabaseUser)
 signal user_invited()
 signal error(supabase_error: SupabaseAuthError)
+signal received_auth(auth_code: String)
 
 const _auth_endpoint : String = "/auth/v1"
 const _provider_endpoint : String = _auth_endpoint+"/authorize"
+const _provider_token_endpoint : String = _auth_endpoint + "/token"
 const _signin_endpoint : String = _auth_endpoint+"/token?grant_type=password"
 const _signin_otp_endpoint : String = _auth_endpoint+"/otp"
 const _verify_otp_endpoint : String = _auth_endpoint+"/verify"
@@ -56,6 +58,7 @@ func _init(conf : Dictionary, head : PackedStringArray) -> void:
 	_config = conf
 	_header = head
 	name = "Authentication"  
+	tcp_timer.timeout.connect(_tcp_stream_timer)
 
 func __get_session_header() -> PackedStringArray :
 	return PackedStringArray([_bearer[0] % ( _auth if not _auth.is_empty() else _config.supabaseKey )])
@@ -168,14 +171,86 @@ func sign_in_anonymous() -> AuthTask:
 	return auth_task
 
 
-# [     CURRENTLY UNSUPPORTED       ]
-# Sign in with a Provider
-# @provider = Providers.PROVIDER
-func sign_in_with_provider(provider : String, grab_from_browser : bool = true, port : int = 3000) -> void:
-	OS.shell_open(_config.supabaseUrl + _provider_endpoint + "?provider="+provider)
-	# ! to be implemented
-	pass
+# This function initiates a provider login (e.g. Google) by opening the browser
+# and waiting on a local TCPServer for the OAuth redirect.
+func sign_in_with_provider(provider: String, port : int = 3000) -> void:
+	# Build the callback URL – this must match what you set in your Supabase project.
+	var callback_url = "http://127.0.0.1:%s" % port
 
+	# Start the TCPServer to listen for the redirect
+	var err = tcp_server.listen(port, "127.0.0.1")
+	if err != OK:
+		error.emit("TCPServer error: " + str(err))
+		return
+
+	add_child(tcp_timer)
+	tcp_timer.start(1)
+
+	# Construct the URL parameters
+	var params = {
+		"client_id": "YOUR CLIENT ID",
+		"redirect_uri": callback_url,
+		"response_type": "code",
+		"provider": provider
+	}
+
+	# Build query string (using percent encoding for safety)
+	var query_arr : Array = []
+	for key in params.keys():
+		query_arr.append("%s=%s" % [key, params[key].uri_encode()])
+	var query_string = "&".join(query_arr)
+
+	# Build the full authorization URL.
+	var auth_url = _config.supabaseUrl + _provider_endpoint + "?" + query_string
+	print(auth_url)
+	# Open the URL in the user's browser.
+	OS.shell_open(auth_url)
+
+	# Wait for the incoming HTTP redirect to provide the auth code.
+	var auth_code = await received_auth
+
+	# Exchange the authorization code for tokens.
+	var token_fetch_task = await sign_in_with_oauth(auth_code, callback_url)
+	await token_fetch_task.completed
+
+
+	var token_data = token_fetch_task.user.dict.get("code", "")
+
+	if not token_data:
+		error.emit("OAuth didn't send a code back")
+		return
+
+	# Update our internal authentication state.
+	_auth = token_data.access_token
+	# Assume token_data also contains refresh_token and expires_in.
+	client = SupabaseUser.new(token_data)  # SupabaseUser should be defined to accept these details.
+	_expires_in = token_data.expires_in
+
+	# Emit the signed_in signal and start token refresh if needed.
+	signed_in.emit(client)
+	refresh_token()
+
+func sign_in_with_oauth(auth_code: String, callback_url: String) -> AuthTask:
+	var payload : Dictionary = {
+		"provider": "google",
+		"code": auth_code,
+		"redirect_uri": callback_url,
+		"grant_type": "pkce",
+		"client_id": "your google client id",
+		"client_secret": "your google client secret"
+	}
+	var content = "&".join(payload.keys().map(func(name): return "%s=%s" % [name, payload[name].uri_encode()]))
+	print(content)
+	var auth_task : AuthTask = AuthTask.new()._setup(
+		AuthTask.Task.SIGNIN,
+		_config.supabaseUrl + _provider_token_endpoint,
+		PackedStringArray([
+			"apikey: %s"%[_config.supabaseKey],
+			"Content-Type: application/json",
+		]),
+		JSON.stringify(payload))
+	_process_task(auth_task)
+	return auth_task
 
 # If a user is logged in, this will log it out
 func sign_out() -> AuthTask:
@@ -339,6 +414,46 @@ func _on_task_completed(task : AuthTask) -> void:
 
 # A timer used to listen through TCP on the redirect uri of the request
 func _tcp_stream_timer() -> void:
-	var peer : StreamPeer = tcp_server.take_connection()
-	# ! to be implemented
-	pass
+	var connection: StreamPeer = tcp_server.take_connection()
+	if not connection:
+		print("No connection")
+		return
+	# Read available data (assumes the entire HTTP request is available).
+	var request_data = connection.get_string(connection.get_available_bytes())
+	if not request_data:
+		print("No data")
+		return
+	# Example request: "GET /callback?code=AUTHCODE&state=... HTTP/1.1"
+	var parts = request_data.split(" ")
+	if parts.size() <= 1:
+		print("no parts")
+		return
+	var url_part = parts[1]
+	var query_index = url_part.find("?")
+	if query_index == -1:
+		print("no index")
+		print(request_data)
+		return
+
+	var query_string = url_part.substr(query_index + 1, url_part.length())
+	var query_set = {}
+
+	for param in query_string.split("&"):
+		print("param ", param)
+		var key_value = param.split("=")
+
+		# Other keys: state, scope="email+profile+
+		if key_value.size() != 2:
+			continue
+		query_set[key_value[0]] = key_value[1]
+
+	if "code" in query_set:
+		var auth_code = query_set["code"]
+
+		# Send a simple HTTP response back to the browser.
+		var response_html = "<html><body>Login successful. You can close this window.</body></html>"
+		var response = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: %s\r\n\r\n%s" % [str(response_html.length()), response_html]
+		connection.put_data(response.to_utf8_buffer())
+		tcp_server.stop() # Stop listening after obtaining the code.
+		received_auth.emit(auth_code)
+		return
