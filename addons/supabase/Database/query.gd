@@ -91,7 +91,6 @@ func build_query() -> String:
 					query += "&".join(PackedStringArray(query_struct[key]))
 				"Or":
 					query += "or=(%s)"%[",".join(query_struct[key])]
-	print(query)
 	return query
 
 
