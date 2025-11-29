@@ -10,7 +10,7 @@ extends Node
 const LOAD_ON_READY : bool = true
 
 # Set .env file for backup
-const ENVIROMENT_PATH : String = "res://addons/supabase/supabase.env"
+const ENVIROMENT_PATH : String = "res://addons/supabase/.env"
 const ENVIRONMENT_VARIABLES : String = "supabase/config"
 
 var auth : SupabaseAuth 
