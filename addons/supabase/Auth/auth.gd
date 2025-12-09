@@ -33,6 +33,7 @@ const _signin_endpoint : String = _auth_endpoint+"/token?grant_type=password"
 const _signin_otp_endpoint : String = _auth_endpoint+"/otp"
 const _verify_otp_endpoint : String = _auth_endpoint+"/verify"
 const _signup_endpoint : String = _auth_endpoint+"/signup"
+const _sign_in_anonymous_endpoint : String = _auth_endpoint + "/signup"
 const _refresh_token_endpoint : String = _auth_endpoint+"/token?grant_type=refresh_token"
 const _logout_endpoint : String = _auth_endpoint+"/logout"
 const _user_endpoint : String = _auth_endpoint+"/user"
@@ -162,9 +163,12 @@ func verify_otp_email(email : String, token : String, type : String) -> AuthTask
 # Sign in as an anonymous user
 func sign_in_anonymous() -> AuthTask:
 	if _auth != "": return _check_auth()
-	var auth_task : AuthTask = AuthTask.new()._setup(AuthTask.Task.SIGNINANONYM, "", [])
+	var auth_task : AuthTask = AuthTask.new()._setup(
+		AuthTask.Task.SIGNINANONYM,
+		_config.supabaseUrl + _sign_in_anonymous_endpoint,
+		_header)
 	auth_task.user = SupabaseUser.new({user = {}, access_token = _config.supabaseKey})
-	_process_task(auth_task, true)
+	_process_task(auth_task)
 	return auth_task
 
 

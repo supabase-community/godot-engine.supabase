@@ -25,7 +25,7 @@ var user : SupabaseUser
 
 func match_code(code: int = Task.NONE) -> int:
 	match code:
-		Task.SIGNIN, Task.SIGNUP, Task.LOGOUT, Task.MAGICLINK, Task.RECOVER, Task.REFRESH, Task.INVITE, Task.VERIFYOTP:
+		Task.SIGNIN, Task.SIGNUP, Task.LOGOUT, Task.MAGICLINK, Task.RECOVER, Task.REFRESH, Task.INVITE, Task.VERIFYOTP, Task.SIGNINANONYM:
 			return HTTPClient.METHOD_POST
 		Task.UPDATE:
 			return HTTPClient.METHOD_PUT
@@ -45,7 +45,7 @@ func _on_task_completed(result : int, response_code : int, headers : PackedStrin
 	match response_code:
 		200:
 			match _code:
-				Task.SIGNUP, Task.SIGNIN, Task.UPDATE, Task.REFRESH, Task.VERIFYOTP:
+				Task.SIGNUP, Task.SIGNIN, Task.UPDATE, Task.REFRESH, Task.VERIFYOTP, Task.SIGNINANONYM:
 					complete(SupabaseUser.new(result_body), result_body)
 				Task.MAGICLINK, Task.RECOVER, Task.INVITE:
 					complete()
