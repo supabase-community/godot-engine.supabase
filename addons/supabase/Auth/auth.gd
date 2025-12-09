@@ -17,7 +17,7 @@ signal signed_up_phone(signed_user: SupabaseUser)
 signal signed_in(signed_user: SupabaseUser)
 signal signed_in_otp(signed_user: SupabaseUser)
 signal otp_verified()
-signal signed_in_anonyous()
+signal signed_in_anonymous(signed_user: SupabaseUser)
 signal signed_out()
 signal got_user()
 signal user_updated(updated_user: SupabaseUser)
@@ -161,12 +161,14 @@ func verify_otp_email(email : String, token : String, type : String) -> AuthTask
 	return auth_task
 
 # Sign in as an anonymous user
-func sign_in_anonymous() -> AuthTask:
+func sign_in_anonymous(data : Dictionary = {}) -> AuthTask:
 	if _auth != "": return _check_auth()
+	var payload : Dictionary = {"data":data}
 	var auth_task : AuthTask = AuthTask.new()._setup(
 		AuthTask.Task.SIGNINANONYM,
 		_config.supabaseUrl + _sign_in_anonymous_endpoint,
-		_header)
+		_header,
+		JSON.stringify(payload))
 	auth_task.user = SupabaseUser.new({user = {}, access_token = _config.supabaseKey})
 	_process_task(auth_task)
 	return auth_task
@@ -324,7 +326,7 @@ func _on_task_completed(task : AuthTask) -> void:
 				AuthTask.Task.VERIFYOTP:
 					otp_verified.emit(client)
 				AuthTask.Task.SIGNINANONYM:
-					signed_in_anonyous.emit()
+					signed_in_anonymous.emit(client)
 			refresh_token()
 		else: 
 			if task.data.is_empty() or task.data == null:
