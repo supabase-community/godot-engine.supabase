@@ -18,6 +18,7 @@ signal signed_in(signed_user: SupabaseUser)
 signal signed_in_otp(signed_user: SupabaseUser)
 signal otp_verified()
 signal signed_in_anonymous(signed_user: SupabaseUser)
+signal has_set_session(session_user: SupabaseUser)
 signal signed_out()
 signal got_user()
 signal user_updated(updated_user: SupabaseUser)
@@ -265,17 +266,26 @@ func invite_user_by_email(email : String) -> AuthTask:
 
 # Refresh the access_token of the authenticated client using the refresh_token
 # No need to call this manually except specific needs, since the process will be handled automatically
-func refresh_token(refresh_token : String = client.refresh_token, expires_in : float = client.expires_in) -> AuthTask:
+func refresh_token(refresh_token : String = client.refresh_token, expires_in : float = client.expires_in, typeOfRefresh: int =AuthTask.Task.REFRESH) -> AuthTask:
 	await get_tree().create_timer(expires_in - 10).timeout
 	var payload : Dictionary = {refresh_token = refresh_token}
 	var auth_task : AuthTask = AuthTask.new()._setup(
-		AuthTask.Task.REFRESH,
+		typeOfRefresh,
 		_config.supabaseUrl + _refresh_token_endpoint, 
 		_header + __get_session_header(),
 		JSON.stringify(payload))
 	_process_task(auth_task)
 	return auth_task 
 
+
+## Set's the current session, useful for an autologin system 
+##[codeblock]
+##Supabase.auth.connect("has_set_session",_ur_func)
+## func _ur_func(session_user: SupabaseUser):
+##[/codeblock]
+func set_session(access_token : String, refresh_token : String = _auth) -> AuthTask:
+	_auth = access_token
+	return await refresh_token(refresh_token,0.0,AuthTask.Task.SET_SESSION)
 
 
 # Retrieve the response from the server
@@ -327,6 +337,8 @@ func _on_task_completed(task : AuthTask) -> void:
 					otp_verified.emit(client)
 				AuthTask.Task.SIGNINANONYM:
 					signed_in_anonymous.emit(client)
+				AuthTask.Task.SET_SESSION:
+					has_set_session.emit(client)
 			refresh_token()
 		else: 
 			if task.data.is_empty() or task.data == null:
