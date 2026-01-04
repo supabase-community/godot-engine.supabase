@@ -1,12 +1,13 @@
+@tool
+extends RefCounted
 class_name RealtimeChannel
-extends Reference
 
 signal delete(old_record, channel)
 signal insert(new_record, channel)
 signal update(old_record, new_record, channel)
 signal all(old_record, new_record, channel)
 
-var _client
+var _client: RealtimeClient
 var topic : String
 var subscribed : bool
 
@@ -25,36 +26,35 @@ func _publish(message : Dictionary) -> void:
 			emit_signal("insert", message.payload.record, self)
 	emit_signal("all", message.payload.get("old_record", {}), message.payload.get("record", {}), self)
   
-func on(event : String, to : Object, function : String) -> RealtimeChannel:
-	connect(event, to, function)
+func on(event: String, callable: Callable) -> RealtimeChannel:
+	connect(event, callable)
 	return self      
-			
+
 func subscribe() -> RealtimeChannel:
 	if subscribed: 
 		_client._error("Already subscribed to topic: %s" % topic)
 		return self
 	_client.send_message({
-	  "topic": topic,
-	  "event": _client.PhxEvents.JOIN,
-	  "payload": {},
-	  "ref": null
+		topic = topic,
+		event = _client.PhxEvents.JOIN,
+		payload = {},
+		ref = null
 	})
 	subscribed = true
 	return self
 
-			
 func unsubscribe() -> RealtimeChannel:
 	if not subscribed: 
 		_client._error("Already unsubscribed from topic: %s" % topic)
 		return self
 	_client.send_message({
-	  "topic": topic,
-	  "event": _client.PhxEvents.LEAVE,
-	  "payload": {},
-	  "ref": null
+		topic = topic,
+		event = _client.PhxEvents.LEAVE,
+		payload = {},
+		ref = null
 	})
 	subscribed = false
 	return self
-	
+
 func close() -> void:
 	_client._remove_channel(self)

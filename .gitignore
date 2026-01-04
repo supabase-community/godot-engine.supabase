@@ -11,6 +11,7 @@ icon.png
 export.cfg
 export_presets.cfg
 default_env.tres
+.godot/
 
 # Imported translations (automatically generated from CSV files)
 *.translation

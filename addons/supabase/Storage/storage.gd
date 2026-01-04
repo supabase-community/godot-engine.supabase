@@ -1,3 +1,4 @@
+@tool
 class_name SupabaseStorage
 extends Node
 
@@ -12,112 +13,109 @@ signal error(error)
 const _rest_endpoint : String = "/storage/v1/"
 
 var _config : Dictionary
-var _header : PoolStringArray = ["Content-type: application/json"]
-var _bearer : PoolStringArray = ["Authorization: Bearer %s"]
+var _header : PackedStringArray = ["Content-type: application/json"]
 
 var _pooled_tasks : Array = []
 
+var _tasks: Node = Node.new()
+var _buckets: Node = Node.new()
 
 func _init(config : Dictionary) -> void:
 	_config = config
 	name = "Storage"
 
+func _ready() -> void:
+	add_child(_tasks)
+	add_child(_buckets)
+
 func list_buckets() -> StorageTask:
-	_bearer = get_parent().auth._bearer
 	var endpoint : String = _config.supabaseUrl + _rest_endpoint + "bucket"
 	var task : StorageTask = StorageTask.new()
 	task._setup(
 		task.METHODS.LIST_BUCKETS, 
 		endpoint, 
-		_header + _bearer)
+		_header + get_parent().auth.__get_session_header())
 	_process_task(task)
 	return task    
 
 
 func get_bucket(id : String) -> StorageTask:
-	_bearer = get_parent().auth._bearer
 	var endpoint : String = _config.supabaseUrl + _rest_endpoint + "bucket/" + id
 	var task : StorageTask = StorageTask.new()
 	task._setup(
 		task.METHODS.GET_BUCKET, 
 		endpoint, 
-		_header + _bearer)
+		_header + get_parent().auth.__get_session_header())
 	_process_task(task)
 	return task    
 
 
-func create_bucket(_name : String, id : String, public : bool = false) -> StorageTask:
-	_bearer = get_parent().auth._bearer
+func create_bucket(_name : String, id : String, options: Dictionary = { public = false, file_size_limit = "100mb", allowed_mime_types = ["*/*"] }) -> StorageTask:
 	var endpoint : String = _config.supabaseUrl + _rest_endpoint + "bucket"
 	var task : StorageTask = StorageTask.new()
 	task._setup(
 		task.METHODS.CREATE_BUCKET, 
 		endpoint, 
-		_header + _bearer,
-		to_json({"name" : _name, id = id, public = public}))
+		_header + get_parent().auth.__get_session_header(),
+		JSON.stringify({name = _name, id = id, public = options.get("public", false), file_size_limit = options.get("file_size_limit", "100mb"), allowed_mime_types = options.get("allowed_mime_types", ["*/*"]) }))
 	_process_task(task)
 	return task    
 
 
 func update_bucket(id : String, public : bool) -> StorageTask:
-	_bearer = get_parent().auth._bearer
 	var endpoint : String = _config.supabaseUrl + _rest_endpoint + "bucket/" + id
 	var task : StorageTask = StorageTask.new()
 	task._setup(
 		task.METHODS.UPDATE_BUCKET, 
 		endpoint, 
-		_header + _bearer,
-		to_json({public = public}))
+		_header + get_parent().auth.__get_session_header(),
+		JSON.stringify({public = public}))
 	_process_task(task)
 	return task        
 
 
 func empty_bucket(id : String) -> StorageTask:
-	_bearer = get_parent().auth._bearer
 	var endpoint : String = _config.supabaseUrl + _rest_endpoint + "bucket/" + id + "/empty"
 	var task : StorageTask = StorageTask.new()
 	task._setup(
 		task.METHODS.EMPTY_BUCKET, 
 		endpoint, 
-		_bearer)
+		get_parent().auth.__get_session_header())
 	_process_task(task)
 	return task        
 
 
 func delete_bucket(id : String) -> StorageTask:
-	_bearer = get_parent().auth._bearer
 	var endpoint : String = _config.supabaseUrl + _rest_endpoint + "bucket/" + id 
 	var task : StorageTask = StorageTask.new()
 	task._setup(
 		task.METHODS.DELETE_BUCKET, 
 		endpoint, 
-		_bearer)
+		get_parent().auth.__get_session_header())
 	_process_task(task)
 	return task        
 
 
 func from(id : String) -> StorageBucket:
-	for bucket in get_children():
+	for bucket in _buckets.get_children():
 		if bucket.id == id:
 			return bucket
-	var storage_bucket : StorageBucket = StorageBucket.new(id, _config, get_parent().auth._bearer)
-	add_child(storage_bucket)
+	var storage_bucket : StorageBucket = StorageBucket.new(id, _config)
+	_buckets.add_child(storage_bucket)
 	return storage_bucket
 
 # ---
 
 func _process_task(task : StorageTask) -> void:
 	var httprequest : HTTPRequest = HTTPRequest.new()
-	httprequest.process_mode=Node.PROCESS_MODE_ALWAYS
-	add_child(httprequest)
-	task.connect("completed", self, "_on_task_completed")
-	task.push_request(httprequest)
+	_tasks.add_child(httprequest)
 	_pooled_tasks.append(task)
+	task.completed.connect(_on_task_completed)
+	task.push_request(httprequest)
 
 # .............. HTTPRequest completed
 func _on_task_completed(task : StorageTask) -> void:
-	if task._handler : task._handler.queue_free()
-	if task.data!=null and not task.data.empty():    
+	if task.data != null and not task.data.is_empty():    
 		match task._code:
 			task.METHODS.LIST_BUCKETS: emit_signal("listed_buckets", task.data)
 			task.METHODS.GET_BUCKET: emit_signal("got_bucket", task.data)

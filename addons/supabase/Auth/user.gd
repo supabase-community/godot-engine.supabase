@@ -1,4 +1,5 @@
-extends Reference
+@tool
+extends RefCounted
 class_name SupabaseUser
 
 var email : String
