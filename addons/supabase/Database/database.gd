@@ -50,6 +50,7 @@ func Rpc(function_name : String, arguments : Dictionary = {}, supabase_query : S
 
 func _process_task(task : DatabaseTask) -> void:
 	var httprequest : HTTPRequest = HTTPRequest.new()
+	httprequest.process_mode=Node.PROCESS_MODE_ALWAYS
 	add_child(httprequest)
 	task.completed.connect(_on_task_completed)
 	_pooled_tasks.append(task)
