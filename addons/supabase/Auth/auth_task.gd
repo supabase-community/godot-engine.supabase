@@ -36,12 +36,12 @@ func _on_task_completed(result : int, response_code : int, headers : PackedStrin
 	if result != 0:
 		complete(null, {}, SupabaseAuthError.new({ error = "Could not connect", code = result }))
 		return
-	
+
 	var result_body : Dictionary
-	
+
 	if(!body.is_empty()):
 		result_body = JSON.parse_string(body.get_string_from_utf8())
-	
+
 	match response_code:
 		200:
 			match _code:
@@ -60,5 +60,3 @@ func _on_task_completed(result : int, response_code : int, headers : PackedStrin
 func complete(_user : SupabaseUser = null, _data : Dictionary = {},  _error : SupabaseAuthError = null) -> void:
 	user = _user
 	super._complete(_data, _error)
-
-
